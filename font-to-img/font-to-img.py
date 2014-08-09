@@ -32,7 +32,11 @@ def vector_font(font, chars, img, **kwargs):
         pic = Image.new('RGB', (img_size,img_size), (255, 255, 255))
         draw = ImageDraw.Draw(pic)
         draw.text(((img_size - w - offset[0]) / 2, (img_size - h - offset[1]) / 2), char, font=font, fill=(0,0,0))
-        pic.save(img % char)
+        dest = img % char
+        dir = os.path.dirname(dest)
+        if not os.path.exists(dir):
+            os.makedirs(dir)
+        pic.save(dest)
 
 @print_timing
 def bitmap_font(font, chars, img, **kwargs):
@@ -40,6 +44,7 @@ def bitmap_font(font, chars, img, **kwargs):
     font_size = int(kwargs.get('font_size', 12))
     pygame.font.init()
     font = pygame.font.Font(font, font_size)
+    linehight = font.get_linesize()
     sio = StringIO.StringIO()
     for char in chars:
         sio.truncate(0)
@@ -50,7 +55,11 @@ def bitmap_font(font, chars, img, **kwargs):
         tmp = Image.open(sio)
         pic = Image.new('RGB', (img_size,img_size), (255, 255, 255))
         pic.paste(tmp, ((img_size - w) / 2, (img_size - h) / 2))
-        pic.save(img % char)
+        dest = img % char
+        dir = os.path.dirname(dest)
+        if not os.path.exists(dir):
+            os.makedirs(dir)
+        pic.save(dest)
 
 
 # ===============================================================================
@@ -58,6 +67,7 @@ def bitmap_font(font, chars, img, **kwargs):
 
 if __name__ == '__main__':
 
-    bitmap_font('fonts/simsun.ttc', [unichr(c) for c in xrange(0x4E00, 0x4E05)], 'img/bitmap-%s.png')
-    vector_font('fonts/simsun.ttc', [unichr(c) for c in xrange(0x4E00, 0x4E05)], 'img/vector-%s.png', img_size=20, font_size=18)
+    bitmap_font('fonts/simsun.ttc', [unichr(c) for c in xrange(0x9F99, 0x9F9F)], 'img/%s/simsun-12.png', img_size=14, font_size=12)
+    bitmap_font('fonts/simsun.ttc', [unichr(c) for c in xrange(0x9F99, 0x9F9F)], 'img/%s/simsun-17.png', img_size=19, font_size=17)
+    vector_font('fonts/simsun.ttc', [unichr(c) for c in xrange(0x9F99, 0x9F9F)], 'img/%s/simsun-32.png', img_size=34, font_size=32)
 
