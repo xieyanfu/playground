@@ -9,22 +9,22 @@ import cv2
 # train data
 train_data = []
 train_lablel = []
-for c in xrange(0x4E00, 0x51E8):
-    for f in ['simsun', 'simhei', 'simkai', 'simyou']:
-        for s in ['12', '17', '32']:
+for c in xrange(0x4E00, 0x9FA5):
+    for f in ['simsun']:
+        for s in ['12']:
             p = 'train/%s/%s-%s.png' % (unichr(c), f, s)
             img = cv2.imread(p.encode('utf-8'), cv2.CV_LOAD_IMAGE_GRAYSCALE)
             train_data.append(img.reshape(img.shape[0] * img.shape[1]))
             train_lablel.append(c)
 
 # test data
-test_pattern = 'test/%s/simsun-32.png' # same small size
+test_pattern = 'test/%s/simsun-12.png' # same small size
 #test_pattern = 'test/%s/simsun-14.png' # diff small size
 #test_pattern = 'test/%s/simsun-32.png' # same large size
 
 test_data = []
 test_lablel = []
-for c in xrange(0x4E00, 0x51E8):
+for c in xrange(0x4E00, 0x9FA5):
     p = test_pattern % unichr(c)
     img = cv2.imread(p.encode('utf-8'), cv2.CV_LOAD_IMAGE_GRAYSCALE)
     test_data.append(img.reshape(img.shape[0] * img.shape[1]))
