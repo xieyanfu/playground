@@ -62,12 +62,37 @@ def bitmap_font(font, chars, img, **kwargs):
         pic.save(dest)
 
 
+@print_timing
+def fonts_on_one_img(fonts, chars, img, **kwargs):
+    img_size = int(kwargs.get('img_size', 14))
+    font_size = int(kwargs.get('font_size', 12))
+    pygame.font.init()
+    sio = StringIO.StringIO()
+    pic = Image.new('RGB', (len(fonts) * img_size, len(chars) * img_size), (255, 255, 255))
+    for fIdx, font in enumerate(fonts):
+        font = pygame.font.Font(font, font_size)
+        linehight = font.get_linesize()
+        for cIdx, char in enumerate(chars):
+            sio.truncate(0)
+            (w, h) = font.size(char)
+            text = font.render(char, True, (0, 0, 0), (255, 255, 255))
+            pygame.image.save(text, sio)
+            sio.seek(0)
+            tmp = Image.open(sio)
+            pic.paste(tmp, (img_size * fIdx + (img_size - w) / 2, img_size * cIdx + (img_size - h) / 2))
+    dir = os.path.dirname(img)
+    if not os.path.exists(dir):
+        os.makedirs(dir)
+    pic.save(img)
+
+
 # ===============================================================================
 
 
 if __name__ == '__main__':
 
     bitmap_font('fonts/simsun.ttc', [unichr(c) for c in xrange(0x9F99, 0x9F9F)], 'img/%s/simsun-12.png', img_size=14, font_size=12)
-    bitmap_font('fonts/simsun.ttc', [unichr(c) for c in xrange(0x9F99, 0x9F9F)], 'img/%s/simsun-17.png', img_size=19, font_size=17)
-    vector_font('fonts/simsun.ttc', [unichr(c) for c in xrange(0x9F99, 0x9F9F)], 'img/%s/simsun-32.png', img_size=34, font_size=32)
+    #bitmap_font('fonts/simsun.ttc', [unichr(c) for c in xrange(0x9F99, 0x9F9F)], 'img/%s/simsun-17.png', img_size=19, font_size=17)
+    #vector_font('fonts/simsun.ttc', [unichr(c) for c in xrange(0x9F99, 0x9F9F)], 'img/%s/simsun-32.png', img_size=34, font_size=32)
+    fonts_on_one_img(['fonts/simsun.ttc', 'fonts/simyou.ttf'], [u'中', u'国'], 'img/test.png', img_size=20, font_size=17)
 
