@@ -15,18 +15,18 @@ from chinese_chars import primary_chars
 
 # np.set_printoptions(threshold='nan')
 
-img = cv2.imread('chinese-25.png')
+img = cv2.imread('chinese-14.png')
 gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
 
-# Now we split the image to 8000 cells, each 30x30 size
+# Now we split the image to 8000 cells, each 20x20 size
 cells = [np.hsplit(row,8) for row in np.vsplit(gray,1000)]
 
-# Make it into a Numpy array. It size will be (1000, 8, 30, 30)
+# Make it into a Numpy array. It size will be (1000, 8, 20, 20)
 x = np.array(cells)
 
 # Now we prepare train_data and test_data.
-train = x[:,:].reshape(-1,900).astype(np.float32) # Size = (8000, 900)
-test = x[:,:].reshape(-1,900).astype(np.float32) # Size = (8000, 900)
+train = x[:,:].reshape(-1,400).astype(np.float32) # Size = (8000, 400)
+test = x[:,:].reshape(-1,400).astype(np.float32) # Size = (8000, 400)
 
 # Create labels for train and test data
 k = [ord(c) for c in primary_chars[:1000]]
@@ -44,3 +44,5 @@ matches = result==test_labels
 correct = np.count_nonzero(matches)
 accuracy = correct*100.0/result.size
 print accuracy
+
+# 41.5375
