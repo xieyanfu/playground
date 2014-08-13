@@ -28,6 +28,13 @@ USAGE:
 import numpy as np
 import cv2
 
+import os, sys
+
+# realpath() will make your script run, even if you symlink it :)
+ext = os.path.realpath(os.path.abspath('../img-processing'))
+if ext not in sys.path:
+    sys.path.insert(0, ext)
+
 def load_base(fn):
     a = np.loadtxt(fn, np.float32, delimiter=',', converters={ 0 : lambda ch : ord(ch)-ord('A') })
     samples, responses = a[:,1:], a[:,0]
@@ -172,13 +179,14 @@ if __name__ == '__main__':
             features = tmp
         return features
 
-    from thin import ZhangSuen
-    from hcl_parser import get_chars
+    #from thin import ZhangSuen
+    from parser import Hcl
     
     features = []
     labels = []
-    for i in xrange(300):
-        chars = get_chars("HCL/xx%03d.hcl" % (i + 1), range(100, 110))
+    hcl = Hcl()
+    for i in xrange(100):
+        chars = hcl.get_chars("../../HCL2000/xx%03d.hcl" % (i + 1), range(1, 100))
         for c in xrange(10):
             
             image = chars[c]

@@ -64,13 +64,13 @@ print '#keypoints in image: %d' % len(kp)
 h, w = img.shape[:2]
 view = sp.zeros((h, w, 3), sp.uint8)
 view[:,:] = (255,255,255) 
-view[:h, :w, 0] = img
+#view[:h, :w, 0] = img
 view[:, :, 1] = view[:, :, 0]
 view[:, :, 2] = view[:, :, 0]
 
 for p in kp:
     #color = tuple([sp.random.randint(0, 255) for _ in xrange(3)])
-    color = (255, 0, 0)
+    color = (0, 0, 255)
     cv2.circle(view, (int(p.pt[0]), int(p.pt[1])), int(p.size*1.2/9.*2), color, 1, 8, 0)
 
 cv2.imwrite("keyponints.jpg", view)
