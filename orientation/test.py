@@ -146,7 +146,7 @@ files = [fn for fn in os.listdir(wd)]
 files = [wd + fn for fn in files]
 
 for fn in files:
-    generate_chars(fn, DATA_PATH + 'tests/')
+    generate_chars(fn, DATA_PATH + '/tests/')
 
 
 
