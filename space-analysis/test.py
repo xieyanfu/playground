@@ -5,6 +5,8 @@ import Image, ImageFont, ImageDraw
 import os
 import time
 
+from scipy.stats import itemfreq
+
 from sklearn.decomposition import RandomizedPCA
 from sklearn.preprocessing import StandardScaler
 from sklearn.neighbors import KNeighborsClassifier
@@ -77,9 +79,12 @@ def features(img):
     # ((img ^ 1) * 255)
     img = (img != 255) * 1
     #print img
-    #print 
-    nonzero = np.nonzero(img)
-    img = img[min(nonzero[0]):max(nonzero[0])+1,min(nonzero[1]):max(nonzero[1])+1]
+    #print
+    
+    # only nonzero, will decrease the correct recognition ratio
+    #nonzero = np.nonzero(img)
+    #img = img[min(nonzero[0]):max(nonzero[0])+1,min(nonzero[1]):max(nonzero[1])+1]
+
     rows = np.vsplit(img, img.shape[0])
     cols = np.hsplit(img, img.shape[1])
     #print img
@@ -137,12 +142,38 @@ def features(img):
     turn_cols = count_turn(turn_each_col)
     #print turn_each_row, turn_row_mean, turn_rows, turn_each_col, turn_col_mean, turn_cols
 
-    return [round(i, 2) for i in [
-        h, w, total, nonzero, 
-        horizontal_min_sum, horizontal_mean_sum, horizontal_max_sum, vertical_min_sum, vertical_mean_sum, vertical_max_sum, 
-        horizontal_min_mean, horizontal_mean_mean, horizontal_max_mean, vertical_min_mean, vertical_mean_mean, vertical_max_mean,
-        turn_horizontal_min, turn_horizontal_mean, turn_horizontal_max, turn_vertical_min, turn_vertical_mean, turn_vertical_max,
-        turn_row_mean, turn_rows, turn_col_mean, turn_cols
+    row_turn_0 = turn_each_row.count(0)
+    row_turn_1 = turn_each_row.count(1)
+    row_turn_3 = len([i for i in turn_each_row if i > 1 and i <= 3])
+    row_turn_5 = len([i for i in turn_each_row if i > 3 and i <= 5])
+    row_turn_7 = len([i for i in turn_each_row if i > 5 and i <= 7])
+    row_turn_9 = len([i for i in turn_each_row if i > 7 and i <= 9])
+    row_turn_11 = len([i for i in turn_each_row if i > 9 and i <= 11])
+    row_turn_15 = len([i for i in turn_each_row if i > 11 and i <= 15])
+    row_turn_21 = len([i for i in turn_each_row if i > 15 and i <= 21])
+    row_turn_more = len([i for i in turn_each_row if i > 21])
+    #print row_turn_0, row_turn_1, row_turn_3, row_turn_5, row_turn_7, row_turn_9, row_turn_11, row_turn_15, row_turn_21, row_turn_more
+
+    col_turn_0 = turn_each_col.count(0)
+    col_turn_1 = turn_each_col.count(1)
+    col_turn_3 = len([i for i in turn_each_col if i > 1 and i <= 3])
+    col_turn_5 = len([i for i in turn_each_col if i > 3 and i <= 5])
+    col_turn_7 = len([i for i in turn_each_col if i > 5 and i <= 7])
+    col_turn_9 = len([i for i in turn_each_col if i > 7 and i <= 9])
+    col_turn_11 = len([i for i in turn_each_col if i > 9 and i <= 11])
+    col_turn_15 = len([i for i in turn_each_col if i > 11 and i <= 15])
+    col_turn_21 = len([i for i in turn_each_col if i > 15 and i <= 21])
+    col_turn_more = len([i for i in turn_each_col if i > 21])
+    #print col_turn_0, col_turn_1, col_turn_3, col_turn_5, col_turn_7, col_turn_9, col_turn_11, col_turn_15, col_turn_21, col_turn_more
+
+    return [round(i, 1) for i in [
+#        h/float(w), nonzero/float(total), 
+#        horizontal_mean_sum, vertical_mean_sum, 
+#        horizontal_mean_mean, vertical_mean_mean, 
+#        turn_horizontal_mean, turn_vertical_mean, 
+#        turn_row_mean, turn_rows, turn_col_mean, turn_cols,
+        row_turn_0, row_turn_1, row_turn_3, row_turn_5, row_turn_7, row_turn_9, row_turn_11, row_turn_15, row_turn_21, row_turn_more,
+        col_turn_0, col_turn_1, col_turn_3, col_turn_5, col_turn_7, col_turn_9, col_turn_11, col_turn_15, col_turn_21, col_turn_more
     ]]
 
 ################### Generate train and test images ###########################
@@ -171,31 +202,29 @@ files = [wd + fn for fn in files]
 #for fn in files:
 #    print fn
 #    print get_img(fn)
-
-
+#exit()
+#
+#fn = DATA_PATH + "/space.png"
 #im_gray = cv2.imread(fn, cv2.CV_LOAD_IMAGE_GRAYSCALE)
 #(thresh, im_bw) = cv2.threshold(im_gray, 128, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
 #cv2.imwrite(DATA_PATH + "/space-rs.png", im_bw)
-#print im_bw
-#im_bw = util("thin_zhangsuen", im_bw)
 #print features(im_bw)
+#exit()
 
-
-#simhei.且.png : [13.0, 14.0, 182.0, 63.0, 2.0, 4.85, 14.0, 1.0, 4.5, 13.0, 0.14, 0.35, 1.0, 0.08, 0.35, 1.0, 4.0, 5.0, 0.0, 1.0, 7.0, 0.0, 3.08, 6.0, 3.0, 4.0]
-#simkai.且.png : [12.0, 14.0, 168.0, 48.0, 0.0, 4.0, 14.0, 0.0, 3.43, 12.0, 0.0, 0.29, 1.0, 0.0, 0.29, 1.0, 0.0, 8.0, 0.0, 0.0, 9.0, 0.0, 3.25, 3.0, 3.0, 6.0]
+#simhei.且.png : [0.9, 0.3, 14.3, 12.9, 0.3, 0.3, 8.0, 8.0, 3.2, 8.0, 3.7, 8.0, 2.0, 1.0, 9.0, 26.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 10.0, 16.0, 0.0, 16.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+#simkai.且.png : [0.8, 0.2, 8.5, 6.7, 0.2, 0.2, 20.0, 18.0, 3.8, 6.0, 3.2, 10.0, 0.0, 0.0, 5.0, 25.0, 2.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 10.0, 18.0, 5.0, 0.0, 8.0, 0.0, 0.0, 0.0, 0.0]
 #
-#simhei.共.png : [13.0, 14.0, 182.0, 79.0, 0.0, 6.08, 14.0, 2.0, 5.64, 13.0, 0.0, 0.43, 1.0, 0.15, 0.43, 1.0, 0.0, 8.0, 0.0, 2.0, 8.0, 0.0, 3.08, 5.0, 4.14, 10.0]
-#simkai.共.png : [13.0, 14.0, 182.0, 50.0, 0.0, 3.85, 14.0, 0.0, 3.57, 13.0, 0.0, 0.27, 1.0, 0.0, 0.27, 1.0, 0.0, 11.0, 0.0, 0.0, 11.0, 0.0, 3.23, 7.0, 4.0, 8.0]
+#simhei.共.png : [1.0, 0.3, 12.9, 12.3, 0.3, 0.3, 25.0, 20.0, 3.3, 7.0, 4.7, 14.0, 4.0, 1.0, 4.0, 31.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 11.0, 10.0, 21.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+#simkai.共.png : [1.0, 0.2, 8.2, 7.8, 0.2, 0.2, 29.0, 28.0, 3.3, 11.0, 4.3, 15.0, 0.0, 3.0, 11.0, 24.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 15.0, 11.0, 10.0, 5.0, 0.0, 0.0, 0.0, 0.0]
 #
-#simhei.其.png : [15.0, 14.0, 210.0, 98.0, 0.0, 6.53, 14.0, 2.0, 7.0, 15.0, 0.0, 0.47, 1.0, 0.13, 0.47, 1.0, 0.0, 8.0, 0.0, 2.0, 11.0, 0.0, 2.8, 9.0, 4.5, 7.0]
-#simkai.其.png : [14.0, 14.0, 196.0, 54.0, 0.0, 3.86, 14.0, 0.0, 3.86, 14.0, 0.0, 0.28, 1.0, 0.0, 0.28, 1.0, 0.0, 9.0, 0.0, 0.0, 11.0, 0.0, 3.0, 7.0, 3.79, 10.0]
+#simhei.其.png : [1.0, 0.4, 14.5, 14.5, 0.4, 0.4, 21.0, 17.0, 3.2, 8.0, 5.7, 12.0, 4.0, 0.0, 8.0, 29.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 12.0, 6.0, 9.0, 10.0, 4.0, 0.0, 0.0, 0.0]
+#simkai.其.png : [1.1, 0.2, 8.5, 8.9, 0.2, 0.2, 25.0, 35.0, 3.7, 17.0, 4.8, 18.0, 0.0, 2.0, 9.0, 25.0, 5.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 14.0, 6.0, 12.0, 5.0, 1.0, 1.0, 0.0, 0.0]
 #
+#simhei.具.png : [1.0, 0.4, 16.7, 15.9, 0.4, 0.4, 25.0, 18.0, 2.9, 10.0, 6.3, 10.0, 4.0, 0.0, 13.0, 22.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 14.0, 9.0, 0.0, 7.0, 11.0, 0.0, 0.0, 0.0]
+#simkai.具.png : [0.9, 0.2, 9.9, 9.1, 0.2, 0.2, 28.0, 28.0, 3.7, 10.0, 4.7, 15.0, 0.0, 3.0, 4.0, 27.0, 3.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 19.0, 10.0, 3.0, 1.0, 5.0, 2.0, 0.0, 0.0]
 #
-#simhei.具.png : [13.0, 14.0, 182.0, 108.0, 0.0, 8.31, 14.0, 2.0, 7.71, 13.0, 0.0, 0.59, 1.0, 0.15, 0.59, 1.0, 0.0, 9.0, 0.0, 2.0, 10.0, 0.0, 2.54, 9.0, 4.21, 7.0]
-#simkai.具.png : [13.0, 13.0, 169.0, 53.0, 0.0, 4.08, 13.0, 0.0, 4.08, 13.0, 0.0, 0.31, 1.0, 0.0, 0.31, 1.0, 0.0, 11.0, 0.0, 0.0, 9.0, 0.0, 3.38, 3.0, 4.23, 7.0]
-#
-#simhei.真.png : [14.0, 14.0, 196.0, 114.0, 0.0, 8.14, 14.0, 2.0, 8.14, 14.0, 0.0, 0.58, 1.0, 0.14, 0.58, 1.0, 0.0, 11.0, 0.0, 2.0, 10.0, 0.0, 2.57, 8.0, 5.07, 9.0]
-#simkai.真.png : [14.0, 14.0, 196.0, 63.0, 0.0, 4.5, 14.0, 0.0, 4.5, 14.0, 0.0, 0.32, 1.0, 0.0, 0.32, 1.0, 0.0, 9.0, 0.0, 0.0, 11.0, 0.0, 2.86, 7.0, 3.64, 9.0]
+#simhei.真.png : [1.0, 0.4, 17.1, 16.3, 0.4, 0.4, 24.0, 23.0, 2.6, 10.0, 8.3, 14.0, 3.0, 1.0, 20.0, 16.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 5.0, 6.0, 12.0, 3.0, 2.0, 14.0, 0.0, 0.0]
+#simkai.真.png : [1.0, 0.2, 8.7, 8.9, 0.2, 0.2, 25.0, 31.0, 3.5, 19.0, 5.7, 16.0, 0.0, 2.0, 13.0, 21.0, 5.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 17.0, 3.0, 8.0, 4.0, 4.0, 4.0, 0.0, 0.0]
 
 
 
@@ -211,7 +240,6 @@ labels = []
 print "extracting features..."
 for i, fn in enumerate(files):
     #print i, "of", len(files)
-    #data.append(get_image_data(fn))
     data.append(get_img(fn))
     labels.append(fn.split(".")[-2].decode("utf8"))
 print "done."
