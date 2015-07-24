@@ -139,14 +139,14 @@ files = [fn for fn in os.listdir(wd)]
 files = [wd + fn for fn in files]
 
 for fn in files:
-    generate_chars(fn, 'trains/')
+    generate_chars(fn, DATA_PATH + '/trains/')
 
 wd = DATA_PATH + "/fonts-test/"
 files = [fn for fn in os.listdir(wd)]
 files = [wd + fn for fn in files]
 
 for fn in files:
-    generate_chars(fn, 'tests/')
+    generate_chars(fn, DATA_PATH + 'tests/')
 
 
 
