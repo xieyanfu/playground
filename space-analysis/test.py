@@ -19,6 +19,17 @@ sys.path.insert(1,'../img-processing/')
 from util import *
 
 DATA_PATH = "/mnt/hgfs/win/python"
+CHARS = (0x5176, 0x5171, 0x5177, 0x771F, 0x4E14) #range(0x4E00, 0x9FA5): #0x9FFF
+#其 : 0x5176
+#共 : 0x5171
+#具 : 0x5177
+#真 : 0x771F
+#且 : 0x4E14
+#目 : 0x76EE
+#日 : 0x65E5
+#月 : 0x6708
+#曰 : 0x66F0
+#县 : 0x53BF
 
 def print_timing(func):
     def wrapper(*arg, **kwargs):
@@ -35,12 +46,8 @@ def generate_chars(font_path, folder, **kwargs):
     font_size = int(kwargs.get('font_size', 46))
     font_name = os.path.splitext(os.path.basename(font_path))[0]
     font = ImageFont.truetype(font_path, font_size)
-    #其 : 0x5176
-    #共 : 0x5171
-    #具 : 0x5177
-    #真 : 0x771F
-    #且 : 0x4E14
-    for c in (0x5176, 0x5171, 0x5177, 0x771F, 0x4E14): #range(0x4E00, 0x9FA5): #0x9FFF
+
+    for c in CHARS: 
         char = unichr(c)
         (w, h) = font.getsize(char)
         offset = font.getoffset(char)
@@ -182,15 +189,15 @@ wd = DATA_PATH + "/fonts-train/"
 files = [fn for fn in os.listdir(wd)]
 files = [wd + fn for fn in files]
 
-#for fn in files:
-#    generate_chars(fn, DATA_PATH + '/trains/', img_size=50, font_size=46)
+for fn in files:
+    generate_chars(fn, DATA_PATH + '/trains/', img_size=50, font_size=46)
 
 wd = DATA_PATH + "/fonts-test/"
 files = [fn for fn in os.listdir(wd)]
 files = [wd + fn for fn in files]
 
-#for fn in files:
-#    generate_chars(fn, DATA_PATH + '/tests/', img_size=50, font_size=46)
+for fn in files:
+    generate_chars(fn, DATA_PATH + '/tests/', img_size=50, font_size=46)
 
 
 
@@ -244,7 +251,7 @@ for i, fn in enumerate(files):
     labels.append(fn.split(".")[-2].decode("utf8"))
 print "done."
 
-pca = RandomizedPCA(n_components=5)
+pca = RandomizedPCA(n_components=10)
 std_scaler = StandardScaler()
 
 X_train, X_test, y_train, y_test = train_test_split(data, labels, test_size=0.1)
