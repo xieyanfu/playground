@@ -312,30 +312,43 @@ pca = RandomizedPCA(n_components=10)
 #pca = RandomizedPCA()
 std_scaler = StandardScaler()
 
-X_train, X_test, y_train, y_test = train_test_split(data, labels, test_size=0.1)
-#print X_train, X_test, y_train, y_test
+#samples_train, samples_test, responses_train, responses_test = train_test_split(data, labels, test_size=0.1)
+#
+#print "scaling data..."
+#samples_train = pca.fit_transform(samples_train)
+#samples_test = pca.transform(samples_test)
+#print "done."
+#
+#print "transforming data..."
+#samples_train = std_scaler.fit_transform(samples_train)
+#samples_test = std_scaler.transform(samples_test)
+#print "done."
+#
+#print "training model..."
+#clf = KNeighborsClassifier(n_neighbors=10)
+#clf.fit(samples_train, responses_train)
+#print "done"
+#print "="*20
+#print clf
+#
+#print "Confusion Matrix"
+#print "="*40
+#print confusion_matrix(responses_test, clf.predict(samples_test))
 
 print "scaling data..."
-X_train = pca.fit_transform(X_train)
-X_test = pca.transform(X_test)
+data = pca.fit_transform(data)
 print "done."
 
 print "transforming data..."
-X_train = std_scaler.fit_transform(X_train)
-X_test = std_scaler.transform(X_test)
+data = std_scaler.fit_transform(data)
 print "done."
 
 print "training model..."
 clf = KNeighborsClassifier(n_neighbors=10)
-clf.fit(X_train, y_train)
+clf.fit(data, labels)
 print "done"
 print "="*20
 print clf
-
-print "Confusion Matrix"
-print "="*40
-print confusion_matrix(y_test, clf.predict(X_test))
-
 
 
 ####################### test ##########################
