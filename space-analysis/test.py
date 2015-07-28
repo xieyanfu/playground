@@ -72,15 +72,18 @@ def generate_chars(font_path, folder, **kwargs):
             os.makedirs(char_path)
         img.save('%s/%s.%s.png' % (char_path, font_name.decode("utf8"), char))
 
-def generate_data(imgs, filename):
+def generate_data(folder, filename):
+    files = [fn for fn in os.listdir(folder)]
+    files = [folder + fn for fn in files]
+
     samples = []
     responses = []
-    for i in imgs:
+    for i in files:
         char = i.split(".")[-2].decode("utf8")
         responses.append(char)
         samples.append(get_img(i))
 
-    pca = RandomizedPCA(n_components=100)
+    pca = RandomizedPCA(n_components=10)
     std_scaler = StandardScaler()
     samples = pca.fit_transform(samples)
     samples = std_scaler.fit_transform(samples)
@@ -229,11 +232,7 @@ def features(img):
 
 ################### Generate features data ###########################
 
-#wd = DATA_PATH + "/trains/"
-#files = [fn for fn in os.listdir(wd)]
-#files = [wd + fn for fn in files]
-
-#generate_data(files, DATA_PATH + '/features.data')
+#generate_data(DATA_PATH + "/trains/", DATA_PATH + '/features.data')
 #exit()
 
 ################### Generate train and test images ###########################
