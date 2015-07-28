@@ -5,7 +5,7 @@ import Image, ImageFont, ImageDraw
 import os
 import time
 
-from scipy.stats import itemfreq
+import pickle
 
 from sklearn.decomposition import RandomizedPCA
 from sklearn.preprocessing import StandardScaler
@@ -15,11 +15,17 @@ from sklearn.cross_validation import train_test_split
 
 import sys
 sys.path.insert(1,'../img-processing/')
+sys.path.insert(1,'../chinese-chars/')
+sys.path.insert(1,'../orientation/')
 
 from util import *
+from chinese_chars import *
+from orientation import orientation
 
 DATA_PATH = "/mnt/hgfs/win/python"
-CHARS = (0x5176, 0x5171, 0x5177, 0x771F, 0x4E14) #range(0x4E00, 0x9FA5): #0x9FFF
+#CHARS = primary_chars
+#CHARS = primary_chars_1 + primary_chars_2 + primary_chars_3 + primary_chars_4
+CHARS = (0x5176, 0x5171, 0x5177, 0x771F, 0x4E14, 0x76EE, 0x65E5, 0x6708, 0x66F0, 0x53BF) #range(0x4E00, 0x9FA5): #0x9FFF
 #其 : 0x5176
 #共 : 0x5171
 #具 : 0x5177
@@ -44,21 +50,49 @@ def print_timing(func):
 def generate_chars(font_path, folder, **kwargs):
     img_size = int(kwargs.get('img_size', 50))
     font_size = int(kwargs.get('font_size', 46))
+    return_obj = bool(kwargs.get('return_obj', False))
     font_name = os.path.splitext(os.path.basename(font_path))[0]
     font = ImageFont.truetype(font_path, font_size)
 
     for c in CHARS: 
-        char = unichr(c)
+        if type(c) is int:
+            char = unichr(c)
+        else:
+            char = c
         (w, h) = font.getsize(char)
         offset = font.getoffset(char)
         img = Image.new('RGB', (img_size,img_size), (255, 255, 255))
         draw = ImageDraw.Draw(img)
         draw.text(((img_size - w - offset[0]) / 2, (img_size - h - offset[1]) / 2), char, font=font, fill=(0,0,0))
+        if return_obj:
+            return img
         #char_path = '%s/%s' % (folder, char)#hex(c)[2:])
         char_path = folder
         if not os.path.exists(char_path):
             os.makedirs(char_path)
         img.save('%s/%s.%s.png' % (char_path, font_name.decode("utf8"), char))
+
+def generate_data(imgs, filename):
+    samples = []
+    responses = []
+    for i in imgs:
+        char = i.split(".")[-2].decode("utf8")
+        responses.append(char)
+        samples.append(get_img(i))
+
+    pca = RandomizedPCA(n_components=100)
+    std_scaler = StandardScaler()
+    samples = pca.fit_transform(samples)
+    samples = std_scaler.fit_transform(samples)
+
+    dat = ""
+    for i, sample in enumerate(samples):
+        char = responses[i]
+        dat += char + "," + ','.join(str(v) for v in sample) + "\n"
+
+    fh = open(filename, 'w')
+    fh.write(dat.encode("utf8"))
+    fh.close()
 
 def count_turn(arr):
     turn = 0;
@@ -69,10 +103,11 @@ def count_turn(arr):
             base = i
     return turn
 
-def get_img(img):
+def get_img(fn):
     im_gray = cv2.imread(fn, cv2.CV_LOAD_IMAGE_GRAYSCALE)
+    angles = orientation(im_gray, 10, False)
     (thresh, im_bw) = cv2.threshold(im_gray, 128, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
-    return features(im_bw)
+    return features(im_bw)# + angles.flatten().tolist()
 
 def predict(img, pca, std_scaler, clf):
     x = pca.transform([img])
@@ -89,8 +124,8 @@ def features(img):
     #print
     
     # only nonzero, will decrease the correct recognition ratio
-    #nonzero = np.nonzero(img)
-    #img = img[min(nonzero[0]):max(nonzero[0])+1,min(nonzero[1]):max(nonzero[1])+1]
+    nonzero = np.nonzero(img)
+    nonzero_img = img[min(nonzero[0]):max(nonzero[0])+1,min(nonzero[1]):max(nonzero[1])+1]
 
     rows = np.vsplit(img, img.shape[0])
     cols = np.hsplit(img, img.shape[1])
@@ -103,11 +138,15 @@ def features(img):
 #            row = row + ("#" if img[i,j] == 1 else "-")
 #        print row
 
-    h = img.shape[0]
-    w = img.shape[1]
+    h = nonzero_img.shape[0]
+    w = nonzero_img.shape[1]
     total = img.shape[0]*img.shape[1]
     nonzero = np.count_nonzero(img)
     #print h, w, total, nonzero
+
+    horizontal_sum = np.sum(img, axis=0)
+    vertical_sum = np.sum(img, axis=1)
+    #print horizontal_sum, vertical_sum
 
     horizontal_min = np.amin(img, axis=0)
     horizontal_mean = np.mean(img, axis=0)
@@ -148,6 +187,7 @@ def features(img):
     turn_col_mean = np.mean(turn_each_col)
     turn_cols = count_turn(turn_each_col)
     #print turn_each_row, turn_row_mean, turn_rows, turn_each_col, turn_col_mean, turn_cols
+    #exit()
 
     row_turn_0 = turn_each_row.count(0)
     row_turn_1 = turn_each_row.count(1)
@@ -173,15 +213,28 @@ def features(img):
     col_turn_more = len([i for i in turn_each_col if i > 21])
     #print col_turn_0, col_turn_1, col_turn_3, col_turn_5, col_turn_7, col_turn_9, col_turn_11, col_turn_15, col_turn_21, col_turn_more
 
-    return [round(i, 1) for i in [
-#        h/float(w), nonzero/float(total), 
-#        horizontal_mean_sum, vertical_mean_sum, 
-#        horizontal_mean_mean, vertical_mean_mean, 
-#        turn_horizontal_mean, turn_vertical_mean, 
-#        turn_row_mean, turn_rows, turn_col_mean, turn_cols,
+    turns_and_sum = [
+        h/float(w), 
+        #nonzero/float(total), 
+        #horizontal_mean_sum, vertical_mean_sum, 
+        #horizontal_mean_mean, vertical_mean_mean, 
+        #turn_horizontal_mean, turn_vertical_mean, 
+        #turn_row_mean, turn_rows, turn_col_mean, turn_cols,
         row_turn_0, row_turn_1, row_turn_3, row_turn_5, row_turn_7, row_turn_9, row_turn_11, row_turn_15, row_turn_21, row_turn_more,
         col_turn_0, col_turn_1, col_turn_3, col_turn_5, col_turn_7, col_turn_9, col_turn_11, col_turn_15, col_turn_21, col_turn_more
-    ]]
+    ] #+ turn_each_row + turn_each_col + horizontal_sum.tolist() + vertical_sum.tolist()
+    return [round(i, 1) for i in turns_and_sum] # round(i, 1)
+
+
+
+################### Generate features data ###########################
+
+#wd = DATA_PATH + "/trains/"
+#files = [fn for fn in os.listdir(wd)]
+#files = [wd + fn for fn in files]
+
+#generate_data(files, DATA_PATH + '/features.data')
+#exit()
 
 ################### Generate train and test images ###########################
 
@@ -189,15 +242,15 @@ wd = DATA_PATH + "/fonts-train/"
 files = [fn for fn in os.listdir(wd)]
 files = [wd + fn for fn in files]
 
-for fn in files:
-    generate_chars(fn, DATA_PATH + '/trains/', img_size=50, font_size=46)
+#for fn in files:
+#    generate_chars(fn, DATA_PATH + '/trains/', img_size=50, font_size=46)
 
 wd = DATA_PATH + "/fonts-test/"
 files = [fn for fn in os.listdir(wd)]
 files = [wd + fn for fn in files]
 
-for fn in files:
-    generate_chars(fn, DATA_PATH + '/tests/', img_size=50, font_size=46)
+#for fn in files:
+#    generate_chars(fn, DATA_PATH + '/tests/', img_size=50, font_size=46)
 
 
 
@@ -251,7 +304,12 @@ for i, fn in enumerate(files):
     labels.append(fn.split(".")[-2].decode("utf8"))
 print "done."
 
+#pickle.dump(itemlist, outfile)
+#itemlist = pickle.load(infile)
+
 pca = RandomizedPCA(n_components=10)
+#pca = RandomizedPCA(n_components=100)
+#pca = RandomizedPCA()
 std_scaler = StandardScaler()
 
 X_train, X_test, y_train, y_test = train_test_split(data, labels, test_size=0.1)
@@ -292,7 +350,7 @@ correct = 0
 total = 0
 for i, fn in enumerate(files):
     total = total + 1
-    print predict(get_img(fn), pca, std_scaler, clf)['label'], fn.split(".")[-2].decode("utf8")
+    #print predict(get_img(fn), pca, std_scaler, clf)['label'], fn.split(".")[-2].decode("utf8")
     if predict(get_img(fn), pca, std_scaler, clf)['label'] == fn.split(".")[-2].decode("utf8"):
         correct = correct + 1
 print 'train rate: %f' % (correct/float(total)*100)
@@ -304,7 +362,7 @@ correct = 0
 total = 0
 for i, fn in enumerate(files):
     total = total + 1
-    print predict(get_img(fn), pca, std_scaler, clf)['label'], fn.split(".")[-2].decode("utf8")
+    #print predict(get_img(fn), pca, std_scaler, clf)['label'], fn.split(".")[-2].decode("utf8")
     if predict(get_img(fn), pca, std_scaler, clf)['label'] == fn.split(".")[-2].decode("utf8"):
         correct = correct + 1
 print 'test  rate: %f' % (correct/float(total)*100)

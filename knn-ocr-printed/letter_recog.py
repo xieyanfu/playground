@@ -1,4 +1,5 @@
-#!/usr/bin/env python
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
 
 '''
 The sample demonstrates how to train Random Trees classifier
@@ -29,7 +30,8 @@ import numpy as np
 import cv2
 
 def load_base(fn):
-    a = np.loadtxt(fn, np.float32, delimiter=',', converters={ 0 : lambda ch : ord(ch)-ord('A') })
+    #a = np.loadtxt(fn, np.unicode_, delimiter=',', converters={ 0 : lambda ch : ch.decode('utf-8') })
+    a = np.loadtxt(fn, np.float32, delimiter=',', converters={ 0 : lambda ch : ord(ch.decode('utf-8'))/1000 })
     samples, responses = a[:,1:], a[:,0]
     return samples, responses
 
@@ -157,26 +159,28 @@ if __name__ == '__main__':
 
     print 'loading data %s ...' % args['--data']
     samples, responses = load_base(args['--data'])
-    Model = models[args['--model']]
-    model = Model()
 
-    train_n = int(len(samples)*model.train_ratio)
-    if '--load' in args:
-        fn = args['--load']
-        print 'loading model from %s ...' % fn
-        model.load(fn)
-    else:
-        print 'training %s ...' % Model.__name__
-        model.train(samples[:train_n], responses[:train_n])
+    for k in models.keys():
+        Model = models[k]
+        model = Model()
 
-    print 'testing...'
-    train_rate = np.mean(model.predict(samples[:train_n]) == responses[:train_n])
-    test_rate  = np.mean(model.predict(samples[train_n:]) == responses[train_n:])
+        train_n = int(len(samples)*model.train_ratio)
+        if '--load' in args:
+            fn = args['--load']
+            print 'loading model from %s ...' % fn
+            model.load(fn)
+        else:
+            print 'training %s ...' % Model.__name__
+            model.train(samples[:train_n], responses[:train_n])
 
-    print 'train rate: %f  test rate: %f' % (train_rate*100, test_rate*100)
+        print 'testing...'
+        train_rate = np.mean(model.predict(samples[:train_n]) == responses[:train_n])
+        test_rate  = np.mean(model.predict(samples[train_n:]) == responses[train_n:])
 
-    if '--save' in args:
-        fn = args['--save']
-        print 'saving model to %s ...' % fn
-        model.save(fn)
-    cv2.destroyAllWindows()
+        print 'train rate: %f  test rate: %f' % (train_rate*100, test_rate*100)
+
+        if '--save' in args:
+            fn = args['--save']
+            print 'saving model to %s ...' % fn
+            model.save(fn)
+
