@@ -373,6 +373,36 @@ exit()
 
 ################### Generate train and test images ###########################
 
+#/mnt/hgfs/win/python/fonts-train/simhei.ttf took 277.654 ms
+#/mnt/hgfs/win/python/fonts-train/simsun.ttc took 202.063 ms
+#/mnt/hgfs/win/python/fonts-train/simyou.ttf took 137.748 ms
+#/mnt/hgfs/win/python/fonts-train/方正中倩简体.ttf took 72.519 ms
+#/mnt/hgfs/win/python/fonts-train/方正中等线简体.ttf took 77.611 ms
+#/mnt/hgfs/win/python/fonts-train/方正书宋简体.ttf took 76.296 ms
+#/mnt/hgfs/win/python/fonts-train/方正仿宋简体.ttf took 70.914 ms
+#/mnt/hgfs/win/python/fonts-train/方正准圆简体.ttf took 74.632 ms
+#/mnt/hgfs/win/python/fonts-train/方正北魏楷书简体.ttf took 75.982 ms
+#/mnt/hgfs/win/python/fonts-train/方正大标宋简体.ttf took 68.524 ms
+#/mnt/hgfs/win/python/fonts-train/方正大黑简体.ttf took 67.502 ms
+#/mnt/hgfs/win/python/fonts-train/方正姚体简体.ttf took 207.633 ms
+#/mnt/hgfs/win/python/fonts-train/方正宋一简体.ttf took 72.490 ms
+#/mnt/hgfs/win/python/fonts-train/方正宋三简体.ttf took 91.271 ms
+#/mnt/hgfs/win/python/fonts-train/方正宋黑简体.ttf took 168.179 ms
+#/mnt/hgfs/win/python/fonts-train/方正小标宋简体.ttf took 69.620 ms
+#/mnt/hgfs/win/python/fonts-train/方正报宋简体.ttf took 212.270 ms
+#/mnt/hgfs/win/python/fonts-train/方正新报宋简体.ttf took 175.132 ms
+#/mnt/hgfs/win/python/fonts-train/方正楷体简体.ttf took 72.847 ms
+#/mnt/hgfs/win/python/fonts-train/方正粗倩简体.ttf took 174.298 ms
+#/mnt/hgfs/win/python/fonts-train/方正粗圆简体.ttf took 176.421 ms
+#/mnt/hgfs/win/python/fonts-train/方正粗宋简体.ttf took 170.415 ms
+#/mnt/hgfs/win/python/fonts-train/方正细倩简体.ttf took 210.147 ms
+#/mnt/hgfs/win/python/fonts-train/方正细圆简体.ttf took 860.265 ms
+#/mnt/hgfs/win/python/fonts-train/方正细等线简体.ttf took 192.867 ms
+#/mnt/hgfs/win/python/fonts-train/方正细黑一简体.ttf took 173.204 ms
+#/mnt/hgfs/win/python/fonts-train/方正黑体简体.TTF took 99.515 ms
+#/mnt/hgfs/win/python/fonts-test/simhei.ttf took 43.610 ms
+#/mnt/hgfs/win/python/fonts-test/simkai.ttf took 45.133 ms
+
 #wd = DATA_PATH + "/fonts-train/"
 #files = [fn for fn in os.listdir(wd)]
 #files = [wd + fn for fn in files]
