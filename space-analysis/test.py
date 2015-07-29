@@ -7,6 +7,9 @@ import time
 
 import pickle
 
+import numpy as np
+import matplotlib.pylab as pl
+
 from sklearn.decomposition import RandomizedPCA
 from sklearn.preprocessing import StandardScaler
 from sklearn.neighbors import KNeighborsClassifier
@@ -19,13 +22,18 @@ sys.path.insert(1,'../chinese-chars/')
 sys.path.insert(1,'../orientation/')
 
 from util import *
+from parser import Hcl
 from chinese_chars import *
 from orientation import orientation
+
+from lbp import ExtendedLBP, OriginalLBP, VarLBP, LPQ
+
+COMPONENTS = 128
 
 DATA_PATH = "/mnt/hgfs/win/python"
 #CHARS = primary_chars
 #CHARS = primary_chars_1 + primary_chars_2 + primary_chars_3 + primary_chars_4
-CHARS = (0x5176, 0x5171, 0x5177, 0x771F, 0x4E14, 0x76EE, 0x65E5, 0x6708, 0x66F0, 0x53BF) #range(0x4E00, 0x9FA5): #0x9FFF
+CHARS = (0x5176, 0x5171, 0x5177, 0x771F, 0x4E14, 0x76EE, 0x65E5, 0x6708, 0x66F0, 0x53BF, 0x672A, 0x672B, 0x6765, 0x4E4E, 0x5E73, 0x5DF1, 0x5DF2, 0x5DF3, 0x4E59, 0x98DE) #range(0x4E00, 0x9FA5): #0x9FFF
 #其 : 0x5176
 #共 : 0x5171
 #具 : 0x5177
@@ -36,6 +44,16 @@ CHARS = (0x5176, 0x5171, 0x5177, 0x771F, 0x4E14, 0x76EE, 0x65E5, 0x6708, 0x66F0,
 #月 : 0x6708
 #曰 : 0x66F0
 #县 : 0x53BF
+#未 : 0x672A
+#末 : 0x672B
+#来 : 0x6765
+#乎 : 0x4E4E
+#平 : 0x5E73
+#己 : 0x5DF1
+#已 : 0x5DF2
+#巳 : 0x5DF3
+#乙 : 0x4E59
+#飞 : 0x98DE
 
 def print_timing(func):
     def wrapper(*arg, **kwargs):
@@ -76,29 +94,36 @@ def generate_data(folder, filename):
     files = [fn for fn in os.listdir(folder)]
     files = [folder + fn for fn in files]
 
-    samples = []
-    responses = []
-    for i in files:
-        char = i.split(".")[-2].decode("utf8")
-        responses.append(char)
-        samples.append(get_img(i))
-
-    pca = RandomizedPCA(n_components=10)
-    std_scaler = StandardScaler()
-    samples = pca.fit_transform(samples)
-    samples = std_scaler.fit_transform(samples)
-
-    dat = ""
-    for i, sample in enumerate(samples):
-        char = responses[i]
-        dat += char + "," + ','.join(str(v) for v in sample) + "\n"
-
     fh = open(filename, 'w')
-    fh.write(dat.encode("utf8"))
+
+    for i in files:
+        data = i.split(".")[-2].decode("utf8") + "," + ','.join(str(v) for v in get_img(i)) + "\n"
+        fh.write(data.encode("utf8"))
     fh.close()
 
+#    samples = []
+#    responses = []
+#    for i in files:
+#        char = i.split(".")[-2].decode("utf8")
+#        responses.append(char)
+#        samples.append(get_img(i))
+#
+#    #pca = RandomizedPCA(n_components=COMPONENTS)
+#    #std_scaler = StandardScaler()
+#    #samples = pca.fit_transform(samples)
+#    #samples = std_scaler.fit_transform(samples)
+#
+#    dat = ""
+#    for i, sample in enumerate(samples):
+#        char = responses[i]
+#        dat += char + "," + ','.join(str(v) for v in sample) + "\n"
+#
+#    fh.write(dat.encode("utf8"))
+#    fh.close()
+
+
 def count_turn(arr):
-    turn = 0;
+    turn = 0
     base = arr[0]
     for i in arr[1:]:
         if i != base:
@@ -106,11 +131,49 @@ def count_turn(arr):
             base = i
     return turn
 
+def count_stroke(arr):
+    cnt = 0
+    turn = 0
+    base = 0
+    for i in arr:
+        if i != base:
+            if base == 1:
+                cnt = cnt + 1
+            turn = turn + 1
+            base = i
+    return cnt
+
+def cal_distance(arr):
+    nonzero = np.nonzero(arr)[0]
+    if nonzero.any():
+        return nonzero[-1] - nonzero[0]
+    return 0 
+
 def get_img(fn):
     im_gray = cv2.imread(fn, cv2.CV_LOAD_IMAGE_GRAYSCALE)
-    angles = orientation(im_gray, 10, False)
+    im_gray = resize(im_gray, width=50, height=50)
+    #angles = orientation(im_gray, 25, False)
     (thresh, im_bw) = cv2.threshold(im_gray, 128, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
-    return features(im_bw)# + angles.flatten().tolist()
+    #return features(im_bw) + angles.flatten().tolist() # angles = orientation(im_gray, 5, False) train rate: 100.000000  test rate: 97.777778 
+    #return features(im_bw) + np.mean(angles, axis=0).flatten().tolist() + np.mean(angles, axis=1).flatten().tolist() # angles = orientation(im_gray, 25, False) train rate: 100.000000  test rate: 96.296296
+    return features(im_bw)
+
+def resize(img, **kwargs):
+    width = int(kwargs.get('width', 36))
+    height = int(kwargs.get('height', 36))
+
+    if img.shape[0]/img.shape[1] >= width/height:
+        if img.shape[0] > width:
+            dim = ((img.shape[1] * width) / img.shape[0], width)
+        else:
+            dim = (img.shape[0], img.shape[1])
+    else:
+        if (img.shape[1] > height):
+            dim = (height, (img.shape[0] * height) / img.shape[1])
+        else:
+            dim = (img.shape[0], img.shape[1])
+
+    return cv2.resize(img, dim, interpolation = cv2.INTER_AREA)
 
 def predict(img, pca, std_scaler, clf):
     x = pca.transform([img])
@@ -191,6 +254,16 @@ def features(img):
     turn_cols = count_turn(turn_each_col)
     #print turn_each_row, turn_row_mean, turn_rows, turn_each_col, turn_col_mean, turn_cols
     #exit()
+    #print turn_each_row
+    #print turn_each_col
+
+    stroke_each_row = [count_stroke(i.flatten()) for i in rows]
+    stroke_each_col = [count_stroke(i.flatten()) for i in cols]
+    #print stroke_each_row, stroke_each_col
+
+    distance_each_row = [cal_distance(i.flatten()) for i in rows]
+    distance_each_col = [cal_distance(i.flatten()) for i in cols]
+    #print distance_each_row, distance_each_col
 
     row_turn_0 = turn_each_row.count(0)
     row_turn_1 = turn_each_row.count(1)
@@ -216,41 +289,105 @@ def features(img):
     col_turn_more = len([i for i in turn_each_col if i > 21])
     #print col_turn_0, col_turn_1, col_turn_3, col_turn_5, col_turn_7, col_turn_9, col_turn_11, col_turn_15, col_turn_21, col_turn_more
 
+    # fit
+    deg = 15
+    x = np.arange(1, 51, 1)
+    stroke_each_row_fit = np.polyfit(x, np.array(stroke_each_row), deg)
+    stroke_each_col_fit = np.polyfit(x, np.array(stroke_each_col), deg)
+    turn_each_row_fit = np.polyfit(x, np.array(turn_each_row), deg)
+    turn_each_col_fit = np.polyfit(x, np.array(turn_each_col), deg)
+    horizontal_sum_fit = np.polyfit(x, np.array(horizontal_sum), deg)
+    vertical_sum_fit = np.polyfit(x, np.array(vertical_sum), deg)
+    distance_each_row_fit = np.polyfit(x, np.array(distance_each_row), deg)
+    distance_each_col_fit = np.polyfit(x, np.array(distance_each_col), deg)
+
+#    #x = np.arange(1, 17, 1)
+#    #y = np.array([4.00, 6.40, 8.00, 8.80, 9.22, 9.50, 9.70, 9.86, 10.00, 10.20, 10.32, 10.42, 10.50, 10.55, 10.58, 10.60])
+#    #x = np.arange(1, 51, 1)
+#    y = np.array(distance_each_col)
+#    print x
+#    print y
+#    print 
+#    
+#    #第一个拟合，自由度为3
+#    z1 = np.polyfit(x, y, 3)
+#    # 生成多项式对象
+#    p1 = np.poly1d(z1)
+#    print(z1)
+#    print(p1)
+#    print 
+#    
+#    # 第二个拟合，自由度为6
+#    z2 = np.polyfit(x, y, 15)
+#    # 生成多项式对象
+#    p2 = np.poly1d(z2)
+#    print(z2)
+#    print(p2) 
+#    print 
+#    
+#    # 绘制曲线 
+#    # 原曲线
+#    pl.plot(x, y, 'b^-', label='Origin Line')
+#    pl.plot(x, p1(x), 'gv--', label='Poly Fitting Line(deg=3)')
+#    pl.plot(x, p2(x), 'r*', label='Poly Fitting Line(deg=6)')
+#    pl.axis([0, 50, 0, 50])
+#    pl.legend()
+#    # Save figure
+#    pl.savefig('scipy02.png', dpi=96)
+#
+#    exit()
+
     turns_and_sum = [
         h/float(w), 
-        #nonzero/float(total), 
-        #horizontal_mean_sum, vertical_mean_sum, 
-        #horizontal_mean_mean, vertical_mean_mean, 
-        #turn_horizontal_mean, turn_vertical_mean, 
-        #turn_row_mean, turn_rows, turn_col_mean, turn_cols,
-        row_turn_0, row_turn_1, row_turn_3, row_turn_5, row_turn_7, row_turn_9, row_turn_11, row_turn_15, row_turn_21, row_turn_more,
-        col_turn_0, col_turn_1, col_turn_3, col_turn_5, col_turn_7, col_turn_9, col_turn_11, col_turn_15, col_turn_21, col_turn_more
-    ] #+ turn_each_row + turn_each_col + horizontal_sum.tolist() + vertical_sum.tolist()
-    return [round(i, 1) for i in turns_and_sum] # round(i, 1)
+        nonzero/float(total), 
+        #horizontal_mean_sum, vertical_mean_sum, # train rate: 100.000000  test rate: 96.296296
+        #horizontal_mean_mean, vertical_mean_mean, # train rate: 100.000000  test rate: 96.296296
+        turn_horizontal_mean, turn_vertical_mean, # train rate: 100.000000  test rate: 97.037037
+        #turn_row_mean, turn_col_mean, # train rate: 100.000000  test rate: 96.296296
+        #turn_rows, turn_cols, # train rate: 100.000000  test rate: 96.666667
+        row_turn_0, row_turn_1, row_turn_3, row_turn_5, row_turn_7, row_turn_9, row_turn_11, row_turn_15, row_turn_21, row_turn_more, # train rate: 98.888889  test rate: 97.407407
+        col_turn_0, col_turn_1, col_turn_3, col_turn_5, col_turn_7, col_turn_9, col_turn_11, col_turn_15, col_turn_21, col_turn_more # train rate: 98.888889  test rate: 97.407407
+    #] + turn_each_row + turn_each_col + stroke_each_row + stroke_each_col + horizontal_sum.tolist() + vertical_sum.tolist() + distance_each_row + distance_each_col # train rate: 100.000000  test rate: 97.037037
+    ] + turn_each_row + turn_each_col + stroke_each_row + stroke_each_col + horizontal_mean.tolist() + vertical_mean.tolist()  + distance_each_row + distance_each_col # train rate: 100.000000  test rate: 98.148148
+    #] + turn_each_row_fit + turn_each_col_fit + stroke_each_row_fit + stroke_each_col_fit + horizontal_sum_fit + vertical_sum_fit + distance_each_row_fit + distance_each_col_fit # train rate: 95.000000  test  rate: 65.000000
+    #] + stroke_each_row + stroke_each_col + turn_each_row + turn_each_col + horizontal_sum.tolist() + vertical_sum.tolist() + distance_each_row + distance_each_col # train rate: 70.000000  test  35.000000
+    #print turns_and_sum
+    #exit()
+    
+    #turns_and_sum = [] + turn_each_row + turn_each_col + stroke_each_row + stroke_each_col + horizontal_sum.tolist() + vertical_sum.tolist() + distance_each_row + distance_each_col
+    #return np.polyfit(np.arange(1, len(turns_and_sum) + 1, 1), np.array(turns_and_sum), 16) # train rate: 90.000000  test  rate: 50.000000
+
+    return turns_and_sum # [round(i, 1) for i in turns_and_sum] # 
 
 
+################### Generate HCL data ###########################
+
+#parser = Hcl()
+#parser.get_img('/mnt/hgfs/win/python/HCL2000/hh006.hcl', 2, 'test', mode='L')
+#exit()
 
 ################### Generate features data ###########################
 
-#generate_data(DATA_PATH + "/trains/", DATA_PATH + '/features.data')
-#exit()
+generate_data(DATA_PATH + "/trains/", DATA_PATH + '/features.data')
+exit()
 
 ################### Generate train and test images ###########################
 
-wd = DATA_PATH + "/fonts-train/"
-files = [fn for fn in os.listdir(wd)]
-files = [wd + fn for fn in files]
-
+#wd = DATA_PATH + "/fonts-train/"
+#files = [fn for fn in os.listdir(wd)]
+#files = [wd + fn for fn in files]
+#
 #for fn in files:
 #    generate_chars(fn, DATA_PATH + '/trains/', img_size=50, font_size=46)
-
-wd = DATA_PATH + "/fonts-test/"
-files = [fn for fn in os.listdir(wd)]
-files = [wd + fn for fn in files]
-
+#
+#wd = DATA_PATH + "/fonts-test/"
+#files = [fn for fn in os.listdir(wd)]
+#files = [wd + fn for fn in files]
+#
 #for fn in files:
 #    generate_chars(fn, DATA_PATH + '/tests/', img_size=50, font_size=46)
-
+#
+#exit()
 
 
 ################### Analytic features ###########################
@@ -306,8 +443,8 @@ print "done."
 #pickle.dump(itemlist, outfile)
 #itemlist = pickle.load(infile)
 
-pca = RandomizedPCA(n_components=10)
-#pca = RandomizedPCA(n_components=100)
+pca = RandomizedPCA(n_components=COMPONENTS)
+#pca = RandomizedPCA(n_components=COMPONENTS)
 #pca = RandomizedPCA()
 std_scaler = StandardScaler()
 
@@ -374,7 +511,7 @@ correct = 0
 total = 0
 for i, fn in enumerate(files):
     total = total + 1
-    #print predict(get_img(fn), pca, std_scaler, clf)['label'], fn.split(".")[-2].decode("utf8")
+    print predict(get_img(fn), pca, std_scaler, clf)['label'], fn.split(".")[-2].decode("utf8")
     if predict(get_img(fn), pca, std_scaler, clf)['label'] == fn.split(".")[-2].decode("utf8"):
         correct = correct + 1
 print 'test  rate: %f' % (correct/float(total)*100)

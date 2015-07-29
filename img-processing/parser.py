@@ -33,17 +33,17 @@ class Hcl:
             chars.append(arr)
         return chars
 
-    def get_img(self, hcl, position):
+    def get_img(self, hcl, position, name, mode='1'):
         from PIL import Image
         arr = self.get_char(hcl, position)
         arr ^= 1
         image = Image.fromarray(arr * 255)
-        image.convert('1')
-        image.save('%s.jpg' % position)
+        image.convert(mode)
+        image.save('%s.jpg' % name)
 
 
 
 if __name__ == "__main__":
 
     parser = Hcl()
-    parser.get_img('/mnt/hgfs/win/HCL2000/hh001.hcl', 2)
+    parser.get_img('/mnt/hgfs/win/HCL2000/hh001.hcl', 2, 'test', mode='L')

@@ -148,7 +148,8 @@ if __name__ == '__main__':
 
     print  __doc__
 
-    models = [RTrees, KNearest, Boost, SVM, MLP] # NBayes
+    #models = [RTrees, KNearest, Boost, SVM, MLP] # NBayes
+    models = [RTrees, SVM] # NBayes
     models = dict( [(cls.__name__.lower(), cls) for cls in models] )
 
 
