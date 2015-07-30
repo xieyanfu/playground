@@ -16,6 +16,8 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import confusion_matrix
 from sklearn.cross_validation import train_test_split
 
+from skimage.feature import local_binary_pattern
+
 import sys
 sys.path.insert(1,'../img-processing/')
 sys.path.insert(1,'../chinese-chars/')
@@ -28,12 +30,13 @@ from orientation import orientation
 
 from lbp import ExtendedLBP, OriginalLBP, VarLBP, LPQ
 
-COMPONENTS = 128
+COMPONENTS = 1000
 
 DATA_PATH = "/mnt/hgfs/win/python"
 #CHARS = primary_chars
 #CHARS = primary_chars_1 + primary_chars_2 + primary_chars_3 + primary_chars_4
-CHARS = (0x5176, 0x5171, 0x5177, 0x771F, 0x4E14, 0x76EE, 0x65E5, 0x6708, 0x66F0, 0x53BF, 0x672A, 0x672B, 0x6765, 0x4E4E, 0x5E73, 0x5DF1, 0x5DF2, 0x5DF3, 0x4E59, 0x98DE) #range(0x4E00, 0x9FA5): #0x9FFF
+CHARS = [0x5176, 0x5171, 0x5177, 0x771F, 0x4E14, 0x76EE, 0x65E5, 0x6708, 0x66F0, 0x53BF, 0x672A, 0x672B, 0x6765, 0x4E4E, 0x5E73, 0x5DF1, 0x5DF2, 0x5DF3, 0x4E59, 0x98DE] #range(0x4E00, 0x9FA5): #0x9FFF
+CHARS = CHARS + primary_chars_3[:10] + primary_chars_5[:10] + primary_chars_7[:10] + primary_chars_9[:10] + primary_chars_11[:10] + primary_chars_13[:10] + primary_chars_15[:10] + primary_chars_17[:10]
 #其 : 0x5176
 #共 : 0x5171
 #具 : 0x5177
@@ -108,10 +111,10 @@ def generate_data(folder, filename):
 #        responses.append(char)
 #        samples.append(get_img(i))
 #
-#    #pca = RandomizedPCA(n_components=COMPONENTS)
-#    #std_scaler = StandardScaler()
-#    #samples = pca.fit_transform(samples)
-#    #samples = std_scaler.fit_transform(samples)
+#    pca = RandomizedPCA(n_components=COMPONENTS)
+#    std_scaler = StandardScaler()
+#    samples = pca.fit_transform(samples)
+#    samples = std_scaler.fit_transform(samples)
 #
 #    dat = ""
 #    for i, sample in enumerate(samples):
@@ -133,13 +136,21 @@ def count_turn(arr):
 
 def count_stroke(arr):
     cnt = 0
-    turn = 0
     base = 0
     for i in arr:
         if i != base:
             if base == 1:
                 cnt = cnt + 1
-            turn = turn + 1
+            base = i
+    return cnt
+
+def count_space(arr):
+    cnt = 0
+    base = 1
+    for i in arr:
+        if i != base:
+            if base == 0:
+                cnt = cnt + 1
             base = i
     return cnt
 
@@ -152,11 +163,14 @@ def cal_distance(arr):
 def get_img(fn):
     im_gray = cv2.imread(fn, cv2.CV_LOAD_IMAGE_GRAYSCALE)
     im_gray = resize(im_gray, width=50, height=50)
-    #angles = orientation(im_gray, 25, False)
+    #return orientation(im_gray, 10, False).flatten().tolist() # train rate: 98.639456  test rate: 89.417989
+    #return orientation(im_gray, 5, False).flatten().tolist() # train rate: 98.790627  test rate: 87.301587
+    #return orientation(im_gray, 3, False).flatten().tolist() # train rate: 98.337113  test rate: 78.987150
+    #angles = orientation(im_gray, 5, False)
     (thresh, im_bw) = cv2.threshold(im_gray, 128, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
-    #return features(im_bw) + angles.flatten().tolist() # angles = orientation(im_gray, 5, False) train rate: 100.000000  test rate: 97.777778 
-    #return features(im_bw) + np.mean(angles, axis=0).flatten().tolist() + np.mean(angles, axis=1).flatten().tolist() # angles = orientation(im_gray, 25, False) train rate: 100.000000  test rate: 96.296296
-    return features(im_bw)
+    #return features(im_bw) + angles.flatten().tolist() # angles = orientation(im_gray, 5, False) train rate: 100.000000  test rate: 93.424036
+    #return features(im_bw) + np.mean(angles, axis=0).flatten().tolist() + np.mean(angles, axis=1).flatten().tolist() # angles = orientation(im_gray, 5, False) train rate: 100.000000  test rate: 93.801965
+    return features(im_bw) # train rate: 100.000000  test rate: 93.348450
 
 def resize(img, **kwargs):
     width = int(kwargs.get('width', 36))
@@ -184,6 +198,45 @@ def predict(img, pca, std_scaler, clf):
     return results
 
 def features(img):
+
+    # settings for LBP
+    METHOD = 'uniform'
+    radius = 5
+    n_points = 8 * radius
+    #lbp = local_binary_pattern(img, n_points, radius, METHOD) # train rate: 72.108844  test rate: 30.914588
+    #lbp = ExtendedLBP(radius=9)(img) # train rate: 99.622071  test rate: 76.643991
+    #lbp = ExtendedLBP(radius=8)(img) # train rate: 99.773243  test rate: 78.155707
+    #lbp = ExtendedLBP(radius=7)(img) # train rate: 96.825397  test rate: 76.719577
+    #lbp = ExtendedLBP(radius=6)(img) # train rate: 100.000000  test rate: 83.673469
+    #lbp = ExtendedLBP(radius=5)(img) # train rate: 99.848828  test rate: 87.906274
+    #lbp = ExtendedLBP(radius=4)(img) # train rate: 99.546485  test rate: 87.981859
+    #lbp = ExtendedLBP(radius=3)(img) # train rate: 91.836735  test rate: 78.080121
+    #lbp = ExtendedLBP(radius=2)(img) # train rate: 92.970522  test rate: 75.510204
+    #lbp = ExtendedLBP(radius=1)(img) # train rate: 78.004535  test rate: 60.846561
+    #lbp = OriginalLBP()(img) # train rate: 84.278156  test rate: 63.794407
+    #lbp = LPQ()(img) # train rate: 100.000000  test rate: 83.975813
+    #lbp = LPQ(radius=1)(img) # train rate: 92.214664  test rate: 70.068027
+    #lbp = LPQ(radius=2)(img) # train rate: 99.546485  test rate: 79.213908
+    #lbp = LPQ(radius=3)(img) # train rate: 100.000000  test rate: 83.975813
+    #lbp = LPQ(radius=4)(img) # train rate: 100.000000  test rate: 88.662132
+    #lbp = LPQ(radius=5)(img) # train rate: 100.000000  test rate: 90.627362
+    lbp = LPQ(radius=6)(img) # train rate: 100.000000  test rate: 90.400605
+    #lbp = LPQ(radius=7)(img) # train rate: 100.000000  test rate: 90.627362
+    #lbp = LPQ(radius=8)(img) # train rate: 100.000000  test rate: 89.720333
+    #lbp = LPQ(radius=9)(img) # train rate: 100.000000  test rate: 87.150416
+    #lbp = LPQ(radius=10)(img) # train rate: 100.000000  test rate: 86.772487
+
+    n_bins = lbp.max() + 1
+    hist, _ = np.histogram(lbp, normed=True, bins=n_bins, range=(0, n_bins))
+    #print len(hist.flatten().tolist())
+    hist = hist.flatten().tolist()
+    fillup = 256
+    if len(hist) < fillup:
+        hist = hist + ([0] * (fillup - len(hist)))
+    #return hist
+
+    ###########################
+
     # ((img ^ 1) * 255)
     img = (img != 255) * 1
     #print img
@@ -260,6 +313,10 @@ def features(img):
     stroke_each_row = [count_stroke(i.flatten()) for i in rows]
     stroke_each_col = [count_stroke(i.flatten()) for i in cols]
     #print stroke_each_row, stroke_each_col
+
+    space_each_row = [count_space(i.flatten()) for i in rows]
+    space_each_col = [count_space(i.flatten()) for i in cols]
+    #print space_each_row, space_each_col
 
     distance_each_row = [cal_distance(i.flatten()) for i in rows]
     distance_each_col = [cal_distance(i.flatten()) for i in cols]
@@ -347,10 +404,14 @@ def features(img):
         #turn_rows, turn_cols, # train rate: 100.000000  test rate: 96.666667
         row_turn_0, row_turn_1, row_turn_3, row_turn_5, row_turn_7, row_turn_9, row_turn_11, row_turn_15, row_turn_21, row_turn_more, # train rate: 98.888889  test rate: 97.407407
         col_turn_0, col_turn_1, col_turn_3, col_turn_5, col_turn_7, col_turn_9, col_turn_11, col_turn_15, col_turn_21, col_turn_more # train rate: 98.888889  test rate: 97.407407
-    #] + turn_each_row + turn_each_col + stroke_each_row + stroke_each_col + horizontal_sum.tolist() + vertical_sum.tolist() + distance_each_row + distance_each_col # train rate: 100.000000  test rate: 97.037037
-    ] + turn_each_row + turn_each_col + stroke_each_row + stroke_each_col + horizontal_mean.tolist() + vertical_mean.tolist()  + distance_each_row + distance_each_col # train rate: 100.000000  test rate: 98.148148
-    #] + turn_each_row_fit + turn_each_col_fit + stroke_each_row_fit + stroke_each_col_fit + horizontal_sum_fit + vertical_sum_fit + distance_each_row_fit + distance_each_col_fit # train rate: 95.000000  test  rate: 65.000000
-    #] + stroke_each_row + stroke_each_col + turn_each_row + turn_each_col + horizontal_sum.tolist() + vertical_sum.tolist() + distance_each_row + distance_each_col # train rate: 70.000000  test  35.000000
+    #] # train rate: 96.976568  test rate: 81.481481
+    #] + hist # train rate: 100.000000  test rate: 94.028723
+    #] + turn_each_row + turn_each_col + stroke_each_row + stroke_each_col + horizontal_sum.tolist() + vertical_sum.tolist() + distance_each_row + distance_each_col # train rate: 100.000000  test rate: 93.801965
+    #] + turn_each_row + turn_each_col + stroke_each_row + stroke_each_col + horizontal_mean.tolist() + vertical_mean.tolist()  + distance_each_row + distance_each_col # train rate: 100.000000  test rate: 93.801965
+    ] + hist + turn_each_row + turn_each_col + stroke_each_row + stroke_each_col + horizontal_mean.tolist() + vertical_mean.tolist()  + distance_each_row + distance_each_col # train rate: 100.000000  test rate: 94.708995
+    #] + hist + space_each_row + space_each_col + turn_each_row + turn_each_col + stroke_each_row + stroke_each_col + horizontal_mean.tolist() + vertical_mean.tolist()  + distance_each_row + distance_each_col # train rate: 100.000000  test rate: 94.255480
+    #] + turn_each_row_fit.tolist() + turn_each_col_fit.tolist() + stroke_each_row_fit.tolist() + stroke_each_col_fit.tolist() + horizontal_sum_fit.tolist() + vertical_sum_fit.tolist() + distance_each_row_fit.tolist() + distance_each_col_fit.tolist() # train rate: 95.313681  test rate: 72.486772
+    #] + stroke_each_row + stroke_each_col + turn_each_row + turn_each_col + horizontal_sum.tolist() + vertical_sum.tolist() + distance_each_row + distance_each_col # train rate: 100.000000  test rate: 93.801965
     #print turns_and_sum
     #exit()
     
@@ -373,35 +434,35 @@ exit()
 
 ################### Generate train and test images ###########################
 
-#/mnt/hgfs/win/python/fonts-train/simhei.ttf took 277.654 ms
-#/mnt/hgfs/win/python/fonts-train/simsun.ttc took 202.063 ms
-#/mnt/hgfs/win/python/fonts-train/simyou.ttf took 137.748 ms
-#/mnt/hgfs/win/python/fonts-train/方正中倩简体.ttf took 72.519 ms
-#/mnt/hgfs/win/python/fonts-train/方正中等线简体.ttf took 77.611 ms
-#/mnt/hgfs/win/python/fonts-train/方正书宋简体.ttf took 76.296 ms
-#/mnt/hgfs/win/python/fonts-train/方正仿宋简体.ttf took 70.914 ms
-#/mnt/hgfs/win/python/fonts-train/方正准圆简体.ttf took 74.632 ms
-#/mnt/hgfs/win/python/fonts-train/方正北魏楷书简体.ttf took 75.982 ms
-#/mnt/hgfs/win/python/fonts-train/方正大标宋简体.ttf took 68.524 ms
-#/mnt/hgfs/win/python/fonts-train/方正大黑简体.ttf took 67.502 ms
-#/mnt/hgfs/win/python/fonts-train/方正姚体简体.ttf took 207.633 ms
-#/mnt/hgfs/win/python/fonts-train/方正宋一简体.ttf took 72.490 ms
-#/mnt/hgfs/win/python/fonts-train/方正宋三简体.ttf took 91.271 ms
-#/mnt/hgfs/win/python/fonts-train/方正宋黑简体.ttf took 168.179 ms
-#/mnt/hgfs/win/python/fonts-train/方正小标宋简体.ttf took 69.620 ms
-#/mnt/hgfs/win/python/fonts-train/方正报宋简体.ttf took 212.270 ms
-#/mnt/hgfs/win/python/fonts-train/方正新报宋简体.ttf took 175.132 ms
-#/mnt/hgfs/win/python/fonts-train/方正楷体简体.ttf took 72.847 ms
-#/mnt/hgfs/win/python/fonts-train/方正粗倩简体.ttf took 174.298 ms
-#/mnt/hgfs/win/python/fonts-train/方正粗圆简体.ttf took 176.421 ms
-#/mnt/hgfs/win/python/fonts-train/方正粗宋简体.ttf took 170.415 ms
-#/mnt/hgfs/win/python/fonts-train/方正细倩简体.ttf took 210.147 ms
-#/mnt/hgfs/win/python/fonts-train/方正细圆简体.ttf took 860.265 ms
-#/mnt/hgfs/win/python/fonts-train/方正细等线简体.ttf took 192.867 ms
-#/mnt/hgfs/win/python/fonts-train/方正细黑一简体.ttf took 173.204 ms
-#/mnt/hgfs/win/python/fonts-train/方正黑体简体.TTF took 99.515 ms
-#/mnt/hgfs/win/python/fonts-test/simhei.ttf took 43.610 ms
-#/mnt/hgfs/win/python/fonts-test/simkai.ttf took 45.133 ms
+#/mnt/hgfs/win/python/fonts-train/simhei.ttf took 829.230 ms
+#/mnt/hgfs/win/python/fonts-train/simsun.ttc took 583.972 ms
+#/mnt/hgfs/win/python/fonts-train/simyou.ttf took 655.739 ms
+#/mnt/hgfs/win/python/fonts-train/方正中倩简体.ttf took 483.509 ms
+#/mnt/hgfs/win/python/fonts-train/方正中等线简体.ttf took 788.024 ms
+#/mnt/hgfs/win/python/fonts-train/方正书宋简体.ttf took 1900.994 ms
+#/mnt/hgfs/win/python/fonts-train/方正仿宋简体.ttf took 950.478 ms
+#/mnt/hgfs/win/python/fonts-train/方正准圆简体.ttf took 754.321 ms
+#/mnt/hgfs/win/python/fonts-train/方正北魏楷书简体.ttf took 4443.363 ms
+#/mnt/hgfs/win/python/fonts-train/方正大标宋简体.ttf took 1259.127 ms
+#/mnt/hgfs/win/python/fonts-train/方正大黑简体.ttf took 660.237 ms
+#/mnt/hgfs/win/python/fonts-train/方正姚体简体.ttf took 1897.082 ms
+#/mnt/hgfs/win/python/fonts-train/方正宋一简体.ttf took 939.088 ms
+#/mnt/hgfs/win/python/fonts-train/方正宋三简体.ttf took 1057.673 ms
+#/mnt/hgfs/win/python/fonts-train/方正宋黑简体.ttf took 1135.772 ms
+#/mnt/hgfs/win/python/fonts-train/方正小标宋简体.ttf took 923.638 ms
+#/mnt/hgfs/win/python/fonts-train/方正报宋简体.ttf took 2010.096 ms
+#/mnt/hgfs/win/python/fonts-train/方正新报宋简体.ttf took 8306.070 ms
+#/mnt/hgfs/win/python/fonts-train/方正楷体简体.ttf took 3677.246 ms
+#/mnt/hgfs/win/python/fonts-train/方正粗倩简体.ttf took 2209.256 ms
+#/mnt/hgfs/win/python/fonts-train/方正粗圆简体.ttf took 967.207 ms
+#/mnt/hgfs/win/python/fonts-train/方正粗宋简体.ttf took 1013.340 ms
+#/mnt/hgfs/win/python/fonts-train/方正细倩简体.ttf took 547.407 ms
+#/mnt/hgfs/win/python/fonts-train/方正细圆简体.ttf took 835.610 ms
+#/mnt/hgfs/win/python/fonts-train/方正细等线简体.ttf took 644.174 ms
+#/mnt/hgfs/win/python/fonts-train/方正细黑一简体.ttf took 1281.633 ms
+#/mnt/hgfs/win/python/fonts-train/方正黑体简体.TTF took 738.653 ms
+#/mnt/hgfs/win/python/fonts-test/simhei.ttf took 1735.492 ms
+#/mnt/hgfs/win/python/fonts-test/simkai.ttf took 2052.319 ms
 
 #wd = DATA_PATH + "/fonts-train/"
 #files = [fn for fn in os.listdir(wd)]

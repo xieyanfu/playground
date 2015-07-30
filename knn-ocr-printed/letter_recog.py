@@ -36,7 +36,7 @@ def load_base(fn):
     return samples, responses
 
 class LetterStatModel(object):
-    class_n = 26
+    class_n = 100
     train_ratio = 0.5
 
     def load(self, fn):
@@ -149,7 +149,8 @@ if __name__ == '__main__':
     print  __doc__
 
     #models = [RTrees, KNearest, Boost, SVM, MLP] # NBayes
-    models = [RTrees, SVM] # NBayes
+    models = [RTrees, KNearest, SVM, MLP] # NBayes
+    #models = [RTrees, SVM] # NBayes
     models = dict( [(cls.__name__.lower(), cls) for cls in models] )
 
 
