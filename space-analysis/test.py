@@ -30,6 +30,8 @@ from orientation import orientation
 
 from lbp import ExtendedLBP, OriginalLBP, VarLBP, LPQ
 
+from feature import Fisherfaces, SpatialHistogram, PCA, LDA
+
 COMPONENTS = 1000
 
 DATA_PATH = "/mnt/hgfs/win/python"
@@ -96,13 +98,31 @@ def generate_chars(font_path, folder, **kwargs):
 def generate_data(folder, filename):
     files = [fn for fn in os.listdir(folder)]
     files = [folder + fn for fn in files]
+    samples = []
+    responses = []
+    for i in files:
+        char = i.split(".")[-2].decode("utf8")
+        responses.append(char)
+        samples.append(load_img(i))
+    
+    feature = SpatialHistogram(lbp_operator=LPQ(radius=6), sz = (3,3)) # train rate: 100.000000  test rate: 99.017385
+    #feature = SpatialHistogram(lbp_operator=LPQ(radius=6), sz = (8,8))
+    samples = feature.compute(samples, responses)
 
     fh = open(filename, 'w')
-
-    for i in files:
-        data = i.split(".")[-2].decode("utf8") + "," + ','.join(str(v) for v in get_img(i)) + "\n"
+    for i, sample in enumerate(samples):
+        data = responses[i] + "," + ','.join(str(np.array(v).reshape(-1,).tolist()[0]) for v in sample) + "\n"
         fh.write(data.encode("utf8"))
     fh.close()
+
+
+#    fh = open(filename, 'w')
+#
+#    for i in files:
+#        data = i.split(".")[-2].decode("utf8") + "," + ','.join(str(v) for v in get_img(i)) + "\n"
+#        fh.write(data.encode("utf8"))
+#    fh.close()
+
 
 #    samples = []
 #    responses = []
@@ -154,11 +174,88 @@ def count_space(arr):
             base = i
     return cnt
 
+def extract_info(arr):
+    total = float(len(arr))
+    info = []
+    cnt = 1
+    base = arr[0]
+    for i in arr[1:]:
+        if i != base:
+            info.append(round(cnt / total, 2) + base)
+            cnt = 1
+            base = i
+        else:
+            cnt = cnt + 1
+
+    # append last one
+    if cnt == total and base == 0:
+        info.append(0)
+    elif cnt > 1:
+        info.append(round(cnt / total, 2) + base)
+
+    # fill 0
+    cnt = len(info)
+    if cnt < 25:
+        info = info + [0]*(25 - cnt)
+
+    # add total info
+    #info.append(total)
+
+    return info
+
+def extract_img(img):
+    img = (img != 255) * 1
+
+    for i in xrange(img.shape[0]):
+        row = ""
+        for j in xrange(img.shape[1]):
+            row = row + ("#" if img[i,j] == 1 else "-")
+        print row
+
+    rows = np.vsplit(img, img.shape[0])
+    cols = np.hsplit(img, img.shape[1])
+
+    row_data = []
+    for r in rows:
+        row_data.append(extract_info(r.flatten()))
+
+    col_data = []
+    for c in cols:
+        col_data.append(extract_info(c.flatten()))
+
+    return (row_data, col_data)
+
+
+def reconstruct_img(infos, size):
+    rows = []
+    for info in infos:
+        if max(info) == 0:
+            row = [0] * int(size)
+        else:
+            row = []
+            for i in info:
+                if i > 1:
+                    row = row + [1] * (int(round((i - 1) * size)))
+                else:
+                    row = row + [0] * (int(round(i * size)))
+        num = len(row)
+        if num > size:
+            row = row[:(size - num)]
+        elif num < size:
+            row = row + [0]*(size - num)
+        rows.append(row)
+    return rows
+
 def cal_distance(arr):
     nonzero = np.nonzero(arr)[0]
     if nonzero.any():
         return nonzero[-1] - nonzero[0]
     return 0 
+
+def load_img(fn):
+    im_gray = cv2.imread(fn, cv2.CV_LOAD_IMAGE_GRAYSCALE)
+    im_gray = resize(im_gray, width=50, height=50)
+    return im_gray
 
 def get_img(fn):
     im_gray = cv2.imread(fn, cv2.CV_LOAD_IMAGE_GRAYSCALE)
@@ -425,6 +522,34 @@ def features(img):
 
 #parser = Hcl()
 #parser.get_img('/mnt/hgfs/win/python/HCL2000/hh006.hcl', 2, 'test', mode='L')
+#exit()
+
+################### Encode/decode image ###########################
+
+#infos = extract_img(load_img(DATA_PATH + "/trains/simhei.且.png"))
+#
+#img = reconstruct_img(np.array(infos[0]), 100)
+#img = np.array(img)
+#
+#print
+#
+#for i in xrange(img.shape[0]):
+#    row = ""
+#    for j in xrange(img.shape[1]):
+#        row = row + ("-" if img[i,j] == 0 else "#")
+#    print row
+#
+#img = reconstruct_img(np.array(infos[1]), 100)
+#img = np.array(img)
+#
+#print
+#
+#for i in xrange(img.shape[0]):
+#    row = ""
+#    for j in xrange(img.shape[1]):
+#        row = row + ("-" if img[i,j] == 0 else "#")
+#    print row
+#
 #exit()
 
 ################### Generate features data ###########################
