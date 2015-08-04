@@ -10,7 +10,7 @@ import pickle
 import numpy as np
 import matplotlib.pylab as pl
 
-from sklearn.decomposition import RandomizedPCA, FactorAnalysis, FastICA, NMF, SparsePCA
+from sklearn.decomposition import RandomizedPCA, FactorAnalysis, FastICA, NMF, SparsePCA, IncrementalPCA, KernelPCA, TruncatedSVD, MiniBatchSparsePCA
 from sklearn.preprocessing import StandardScaler
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import confusion_matrix
@@ -22,6 +22,7 @@ import sys
 sys.path.insert(1,'../img-processing/')
 sys.path.insert(1,'../chinese-chars/')
 sys.path.insert(1,'../orientation/')
+sys.path.insert(1,'../knn-ocr-printed/')
 
 from util import *
 from parser import Hcl
@@ -31,6 +32,8 @@ from orientation import orientation
 from lbp import ExtendedLBP, OriginalLBP, VarLBP, LPQ
 
 from feature import Fisherfaces, SpatialHistogram, PCA, LDA
+
+from letter_recog import RTrees, KNearest, SVM, MLP
 
 COMPONENTS = 1000
 
@@ -100,31 +103,79 @@ def generate_data(folder, filename):
     files = [folder + fn for fn in files]
     samples = []
     responses = []
+
+    print 'generating data ...'
+    t1 = time.time()
     for i in files:
         char = i.split(".")[-2].decode("utf8")
-        responses.append(char)
+        #responses.append(char)
+        responses.append(ord(char) / 1000)
         samples.append(load_img(i))
-    
+    t2 = time.time()
+    print 'data generated, took %0.3f ms' % ((t2 - t1) * 1000.0,)
+
+    print 'generating features ...'
+    t1 = time.time()
     #feature = SpatialHistogram(lbp_operator=LPQ(radius=6), sz = (3,3)) # train rate: 100.000000  test rate: 99.017385
     #feature = SpatialHistogram(lbp_operator=LPQ(radius=6), sz = (4,4)) # train rate: 100.000000  test rate: 99.773243
     #feature = SpatialHistogram(lbp_operator=LPQ(radius=6), sz = (5,5)) # MLP ：train rate: 100.000000  test rate: 99.697657    SVM ：train rate: 99.848828  test rate: 99.244142
     feature = SpatialHistogram(lbp_operator=LPQ(radius=6), sz = (6,6)) # MLP ：train rate: 100.000000  test rate: 99.924414    SVM ：train rate: 100.000000  test rate: 99.697657
     samples = feature.compute(samples, responses)
+    t2 = time.time()
+    print 'features processed, took %0.3f ms' % ((t2 - t1) * 1000.0,)
 
+    print 'processing pca ...'
+    t1 = time.time()
     ###################### TODO: check other PCA alg
-    #pca = FastICA(n_components=512) # feature = SpatialHistogram(lbp_operator=LPQ(radius=6), sz = (6,6))  MLP ：train rate: 100.000000  test rate: 99.470899  SVM ：train rate: 100.000000  test rate: 98.790627
+    pca = TruncatedSVD(n_components=512) # feature = SpatialHistogram(lbp_operator=LPQ(radius=6), sz = (6,6))  MLP ：train rate: 100.000000, test rate: 99.470899  SVM ：train rate: 100.000000, test rate: 98.941799
+    #pca = KernelPCA(n_components=512) # feature = SpatialHistogram(lbp_operator=LPQ(radius=6), sz = (6,6))  MLP ：train rate: 100.000000, test rate: 99.470899  SVM ：train rate: 100.000000, test rate: 98.941799
+    #pca = IncrementalPCA(n_components=512) # feature = SpatialHistogram(lbp_operator=LPQ(radius=6), sz = (6,6))  MLP ：train rate: 100.000000  test rate: 99.395314  SVM ：train rate: 100.000000  test rate: 98.941799
+    #pca = NMF(n_components=512) # feature = SpatialHistogram(lbp_operator=LPQ(radius=6), sz = (6,6))  MLP ：train rate: 100.000000  test rate: 97.732426  SVM ：train rate: 100.000000  test rate: 99.244142
+    #pca = FastICA(n_components=512) # feature = SpatialHistogram(lbp_operator=LPQ(radius=6), sz = (6,6))  MLP ：train rate: 100.000000  test rate: 99.395314  SVM ：train rate: 100.000000  test rate: 98.941799
     #pca = RandomizedPCA(n_components=512) # feature = SpatialHistogram(lbp_operator=LPQ(radius=6), sz = (6,6))  MLP ：train rate: 100.000000  test rate: 99.470899  SVM ：train rate: 100.000000  test rate: 98.790627
-    pca = RandomizedPCA(n_components=256) # feature = SpatialHistogram(lbp_operator=LPQ(radius=6), sz = (6,6))  MLP ：train rate: 99.848828  test rate: 99.395314  SVM ：train rate: 100.000000  test rate: 99.319728
+    #pca = RandomizedPCA(n_components=256) # feature = SpatialHistogram(lbp_operator=LPQ(radius=6), sz = (6,6))  MLP ：train rate: 99.848828  test rate: 99.395314  SVM ：train rate: 100.000000  test rate: 99.319728
     #pca = RandomizedPCA(n_components=128) # feature = SpatialHistogram(lbp_operator=LPQ(radius=6), sz = (6,6))  MLP ：train rate: 98.790627  test rate: 98.185941  SVM ：train rate: 100.000000  test rate: 98.941799
     std_scaler = StandardScaler()
     samples = pca.fit_transform(samples)
     samples = std_scaler.fit_transform(samples)
+    t2 = time.time()
+    print 'pca processed, took %0.3f ms' % ((t2 - t1) * 1000.0,)
 
+    if filename == '':
+        return (np.array(samples, dtype=np.float32), np.array(responses, dtype=np.float32))
+
+    print 'saving data ...'
+    t1 = time.time()
     fh = open(filename, 'w')
     for i, sample in enumerate(samples):
         data = responses[i] + "," + ','.join(str(np.array(v).reshape(-1,).tolist()[0]) for v in sample) + "\n"
         fh.write(data.encode("utf8"))
     fh.close()
+    t2 = time.time()
+    print 'data saved, took %0.3f ms' % ((t2 - t1) * 1000.0,)
+
+
+def test_classifier(samples, responses):
+    models = [RTrees, KNearest, SVM, MLP] # NBayes
+    models = dict( [(cls.__name__.lower(), cls) for cls in models] )
+
+    for k in models.keys():
+        Model = models[k]
+        model = Model()
+
+        train_n = int(len(samples)*model.train_ratio)
+
+        t1 = time.time()
+        model.train(samples[:train_n], responses[:train_n])
+        t2 = time.time()
+
+        t3 = time.time()
+        train_rate = np.mean(model.predict(samples[:train_n]) == responses[:train_n])
+        test_rate  = np.mean(model.predict(samples[train_n:]) == responses[train_n:])
+        t4 = time.time()
+        print 'train %s took %0.3f ms, test took %0.3f ms, train rate: %f, test rate: %f' % (Model.__name__, (t2 - t1) * 1000.0, (t4 - t3) * 1000.0, train_rate*100, test_rate*100)
+
+        print
 
 
 #    fh = open(filename, 'w')
@@ -525,7 +576,8 @@ def features(img):
     
     #turns_and_sum = [] + turn_each_row + turn_each_col + stroke_each_row + stroke_each_col + horizontal_sum.tolist() + vertical_sum.tolist() + distance_each_row + distance_each_col
     #return np.polyfit(np.arange(1, len(turns_and_sum) + 1, 1), np.array(turns_and_sum), 16) # train rate: 90.000000  test  rate: 50.000000
-
+    print len(turns_and_sum)
+    exit()
     return turns_and_sum # [round(i, 1) for i in turns_and_sum] # 
 
 
@@ -565,7 +617,11 @@ def features(img):
 
 ################### Generate features data ###########################
 
-generate_data(DATA_PATH + "/trains/", DATA_PATH + '/features.data')
+#generate_data(DATA_PATH + "/trains/", DATA_PATH + '/features.data')
+
+samples, responses = generate_data(DATA_PATH + "/trains/", '')
+test_classifier(samples, responses)
+
 exit()
 
 ################### Generate train and test images ###########################
