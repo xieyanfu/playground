@@ -388,9 +388,9 @@ def features(img):
 
 
 
-BLOCKS = 4
-ORIENTATIONS = (8, 8, 4)
-DIMENSION = 960
+BLOCKS = 3
+ORIENTATIONS = (8, 8, 3)
+DIMENSION = 513
 
 #print leargist.color_gist(Image.open(DATA_PATH + "/trains//simhei.且.png"), nblocks=BLOCKS, orientations=ORIENTATIONS).shape
 #exit()

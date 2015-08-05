@@ -10,7 +10,7 @@ import pickle
 import numpy as np
 import matplotlib.pylab as pl
 
-from sklearn.decomposition import RandomizedPCA, FactorAnalysis, FastICA, NMF, SparsePCA, IncrementalPCA, KernelPCA, TruncatedSVD, MiniBatchSparsePCA
+from sklearn.decomposition import RandomizedPCA, FactorAnalysis, FastICA, NMF, SparsePCA, IncrementalPCA, KernelPCA, TruncatedSVD
 from sklearn.preprocessing import StandardScaler
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import confusion_matrix
@@ -124,22 +124,22 @@ def generate_data(folder, filename):
     t2 = time.time()
     print 'features processed, took %0.3f ms' % ((t2 - t1) * 1000.0,)
 
-    print 'processing pca ...'
-    t1 = time.time()
-    ###################### TODO: check other PCA alg
-    pca = TruncatedSVD(n_components=512) # feature = SpatialHistogram(lbp_operator=LPQ(radius=6), sz = (6,6))  MLP ：train rate: 100.000000, test rate: 99.470899  SVM ：train rate: 100.000000, test rate: 98.941799
-    #pca = KernelPCA(n_components=512) # feature = SpatialHistogram(lbp_operator=LPQ(radius=6), sz = (6,6))  MLP ：train rate: 100.000000, test rate: 99.470899  SVM ：train rate: 100.000000, test rate: 98.941799
-    #pca = IncrementalPCA(n_components=512) # feature = SpatialHistogram(lbp_operator=LPQ(radius=6), sz = (6,6))  MLP ：train rate: 100.000000  test rate: 99.395314  SVM ：train rate: 100.000000  test rate: 98.941799
-    #pca = NMF(n_components=512) # feature = SpatialHistogram(lbp_operator=LPQ(radius=6), sz = (6,6))  MLP ：train rate: 100.000000  test rate: 97.732426  SVM ：train rate: 100.000000  test rate: 99.244142
-    #pca = FastICA(n_components=512) # feature = SpatialHistogram(lbp_operator=LPQ(radius=6), sz = (6,6))  MLP ：train rate: 100.000000  test rate: 99.395314  SVM ：train rate: 100.000000  test rate: 98.941799
-    #pca = RandomizedPCA(n_components=512) # feature = SpatialHistogram(lbp_operator=LPQ(radius=6), sz = (6,6))  MLP ：train rate: 100.000000  test rate: 99.470899  SVM ：train rate: 100.000000  test rate: 98.790627
-    #pca = RandomizedPCA(n_components=256) # feature = SpatialHistogram(lbp_operator=LPQ(radius=6), sz = (6,6))  MLP ：train rate: 99.848828  test rate: 99.395314  SVM ：train rate: 100.000000  test rate: 99.319728
-    #pca = RandomizedPCA(n_components=128) # feature = SpatialHistogram(lbp_operator=LPQ(radius=6), sz = (6,6))  MLP ：train rate: 98.790627  test rate: 98.185941  SVM ：train rate: 100.000000  test rate: 98.941799
-    std_scaler = StandardScaler()
-    samples = pca.fit_transform(samples)
-    samples = std_scaler.fit_transform(samples)
-    t2 = time.time()
-    print 'pca processed, took %0.3f ms' % ((t2 - t1) * 1000.0,)
+#    print 'processing pca ...'
+#    t1 = time.time()
+#    ###################### TODO: check other PCA alg
+#    #pca = TruncatedSVD(n_components=512) # feature = SpatialHistogram(lbp_operator=LPQ(radius=6), sz = (6,6))  MLP ：train rate: 100.000000, test rate: 99.773243  SVM ：train rate: 100.000000, test rate: 98.790627
+#    #pca = KernelPCA(n_components=512) # feature = SpatialHistogram(lbp_operator=LPQ(radius=6), sz = (6,6))  MLP ：train rate: 100.000000, test rate: 99.470899  SVM ：train rate: 100.000000, test rate: 98.941799
+#    #pca = IncrementalPCA(n_components=512) # feature = SpatialHistogram(lbp_operator=LPQ(radius=6), sz = (6,6))  MLP ：train rate: 100.000000  test rate: 99.395314  SVM ：train rate: 100.000000  test rate: 98.941799
+#    #pca = NMF(n_components=512) # feature = SpatialHistogram(lbp_operator=LPQ(radius=6), sz = (6,6))  MLP ：train rate: 100.000000  test rate: 97.732426  SVM ：train rate: 100.000000  test rate: 99.244142
+#    #pca = FastICA(n_components=512) # feature = SpatialHistogram(lbp_operator=LPQ(radius=6), sz = (6,6))  MLP ：train rate: 100.000000  test rate: 99.395314  SVM ：train rate: 100.000000  test rate: 98.941799
+#    #pca = RandomizedPCA(n_components=512) # feature = SpatialHistogram(lbp_operator=LPQ(radius=6), sz = (6,6))  MLP ：train rate: 100.000000  test rate: 99.470899  SVM ：train rate: 100.000000  test rate: 98.790627
+#    #pca = RandomizedPCA(n_components=256) # feature = SpatialHistogram(lbp_operator=LPQ(radius=6), sz = (6,6))  MLP ：train rate: 99.848828  test rate: 99.395314  SVM ：train rate: 100.000000  test rate: 99.319728
+#    #pca = RandomizedPCA(n_components=128) # feature = SpatialHistogram(lbp_operator=LPQ(radius=6), sz = (6,6))  MLP ：train rate: 98.790627  test rate: 98.185941  SVM ：train rate: 100.000000  test rate: 98.941799
+#    std_scaler = StandardScaler()
+#    samples = pca.fit_transform(samples)
+#    samples = std_scaler.fit_transform(samples)
+#    t2 = time.time()
+#    print 'pca processed, took %0.3f ms' % ((t2 - t1) * 1000.0,)
 
     if filename == '':
         return (np.array(samples, dtype=np.float32), np.array(responses, dtype=np.float32))
