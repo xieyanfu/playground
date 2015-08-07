@@ -41,7 +41,7 @@ DATA_PATH = "/mnt/hgfs/win/python"
 #CHARS = primary_chars
 #CHARS = primary_chars_1 + primary_chars_2 + primary_chars_3 + primary_chars_4
 CHARS = [0x5176, 0x5171, 0x5177, 0x771F, 0x4E14, 0x76EE, 0x65E5, 0x6708, 0x66F0, 0x53BF, 0x672A, 0x672B, 0x6765, 0x4E4E, 0x5E73, 0x5DF1, 0x5DF2, 0x5DF3, 0x4E59, 0x98DE] #range(0x4E00, 0x9FA5): #0x9FFF
-CHARS = CHARS + primary_chars_3[:10] + primary_chars_5[:10] + primary_chars_7[:10] + primary_chars_9[:10] + primary_chars_11[:10] + primary_chars_13[:10] + primary_chars_15[:10] + primary_chars_17[:10]
+CHARS = [unichr(i) for i in CHARS] + primary_chars_3[:10] + primary_chars_5[:10] + primary_chars_7[:10] + primary_chars_9[:10] + primary_chars_11[:10] + primary_chars_13[:10] + primary_chars_15[:10] + primary_chars_17[:10]
 #其 : 0x5176
 #共 : 0x5171
 #具 : 0x5177
@@ -109,7 +109,7 @@ def generate_data(folder, filename):
     for i in files:
         char = i.split(".")[-2].decode("utf8")
         #responses.append(char)
-        responses.append(ord(char) / 1000)
+        responses.append(CHARS.index(i.split(".")[-2].decode("utf8")))
         samples.append(load_img(i))
     t2 = time.time()
     print 'data generated, took %0.3f ms' % ((t2 - t1) * 1000.0,)
@@ -123,6 +123,7 @@ def generate_data(folder, filename):
     samples = feature.compute(samples, responses)
     t2 = time.time()
     print 'features processed, took %0.3f ms' % ((t2 - t1) * 1000.0,)
+
 
 #    print 'processing pca ...'
 #    t1 = time.time()
@@ -142,7 +143,7 @@ def generate_data(folder, filename):
 #    print 'pca processed, took %0.3f ms' % ((t2 - t1) * 1000.0,)
 
     if filename == '':
-        return (np.array(samples, dtype=np.float32), np.array(responses, dtype=np.float32))
+        return (np.array(samples, dtype=np.float32), np.array(responses))
 
     print 'saving data ...'
     t1 = time.time()
@@ -156,6 +157,43 @@ def generate_data(folder, filename):
 
 
 def test_classifier(samples, responses):
+
+#    # just pass the raw image data to FaceRecognizer 
+#    #model = cv2.createEigenFaceRecognizer() # SpatialHistogram(lbp_operator=LPQ(radius=6), sz = (6,6)) train took 372067.983 ms, test took 51467.762 ms, train rate: 100.000000, test rate: 97.808012
+#    model = cv2.createFisherFaceRecognizer() # SpatialHistogram(lbp_operator=LPQ(radius=6), sz = (6,6)) train took 378769.568 ms, test took 7521.627 ms, train rate: 100.000000, test rate: 99.773243
+#
+#    train_n = int(len(samples)*0.5)
+#
+#    t1 = time.time()
+#    model.train(samples[:train_n], responses[:train_n])
+#    t2 = time.time()
+#
+#    print model.predict(samples[:train_n][10])[0], responses[:train_n][10]
+#
+#    t3 = time.time()
+#    total = 0
+#    correct = 0
+#    for i, s in enumerate(samples[:train_n]):
+#        total = total + 1
+#        if model.predict(s)[0] == responses[:train_n][i]:
+#            correct = correct + 1
+#    train_rate = correct / float(total)
+#
+#    total = 0
+#    correct = 0
+#    for i, s in enumerate(samples[train_n:]):
+#        total = total + 1
+#        if model.predict(s)[0] == responses[train_n:][i]:
+#            correct = correct + 1
+#    test_rate = correct / float(total)
+#
+#    #train_rate = np.mean(np.array([model.predict(i)[0] for i in samples[:train_n] if i.shape == (50,50)]) == responses[:train_n])
+#    #test_rate  = np.mean(np.array([model.predict(i)[0] for i in samples[train_n:] if i.shape == (50,50)]) == responses[train_n:])
+#    t4 = time.time()
+#    print 'train took %0.3f ms, test took %0.3f ms, train rate: %f, test rate: %f' % ((t2 - t1) * 1000.0, (t4 - t3) * 1000.0, train_rate*100, test_rate*100)
+#    exit()
+
+
     models = [RTrees, KNearest, SVM, MLP] # NBayes
     models = dict( [(cls.__name__.lower(), cls) for cls in models] )
 
@@ -272,7 +310,6 @@ def extract_img(img):
         row = ""
         for j in xrange(img.shape[1]):
             row = row + ("#" if img[i,j] == 1 else "-")
-        print row
 
     rows = np.vsplit(img, img.shape[0])
     cols = np.hsplit(img, img.shape[1])
