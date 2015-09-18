@@ -75,6 +75,8 @@ def fonts_on_one_img(fonts, chars, img, **kwargs):
         for cIdx, char in enumerate(chars):
             sio.truncate(0)
             (w, h) = font.size(char)
+            if w == 0 or h == 0:
+                continue
             text = font.render(char, True, (0, 0, 0), (255, 255, 255))
             pygame.image.save(text, sio)
             sio.seek(0)
@@ -91,8 +93,14 @@ def fonts_on_one_img(fonts, chars, img, **kwargs):
 
 if __name__ == '__main__':
 
-    bitmap_font('fonts/simsun.ttc', [unichr(c) for c in xrange(0x9F99, 0x9F9F)], 'img/%s/simsun-12.png', img_size=14, font_size=12)
+    #bitmap_font('fonts/simsun.ttc', [unichr(c) for c in xrange(0x9F99, 0x9F9F)], 'img/%s/simsun-12.png', img_size=14, font_size=12)
     #bitmap_font('fonts/simsun.ttc', [unichr(c) for c in xrange(0x9F99, 0x9F9F)], 'img/%s/simsun-17.png', img_size=19, font_size=17)
     #vector_font('fonts/simsun.ttc', [unichr(c) for c in xrange(0x9F99, 0x9F9F)], 'img/%s/simsun-32.png', img_size=34, font_size=32)
-    fonts_on_one_img(['fonts/simsun.ttc', 'fonts/simyou.ttf'], [u'中', u'国'], 'img/test.png', img_size=20, font_size=17)
+    #fonts_on_one_img(['fonts/simsun.ttc', 'fonts/simyou.ttf'], [u'中', u'国'], 'img/test.png', img_size=20, font_size=17)
+    fonts = ['fonts/书体坊颜体.ttf', 'fonts/华康龙门石碑W9.TTF', 'fonts/博洋柳体3500.TTF', 'fonts/康熙字典体.otf', 'fonts/方正姚体_GBK.ttf',
+            'fonts/方正宋体S-超大字符集.TTF', 'fonts/方正楷体S-超大字符集.TTF', 'fonts/方正瘦金书_GBK.ttf', 'fonts/方正行楷_GBK.ttf',
+            'fonts/方正魏碑_GBK.ttf', 'fonts/花園明朝體A.ttf', 
+            'fonts/苹果丽黑(W6).otf', 'fonts/華康歐陽詢t.ttf']
+    chars = [u'龹', u'龤', u'嚴', u'龙', u'龍', u'丁', u'与', u'舆', u'鳯', u'齾', u'麡', u'丑', u'丞', u'主', u'丹']
+    fonts_on_one_img(fonts, chars, './test.png', img_size=50, font_size=46)
 

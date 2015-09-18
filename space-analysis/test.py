@@ -41,7 +41,8 @@ DATA_PATH = "/mnt/hgfs/win/python"
 #CHARS = primary_chars
 #CHARS = primary_chars_1 + primary_chars_2 + primary_chars_3 + primary_chars_4
 CHARS = [0x5176, 0x5171, 0x5177, 0x771F, 0x4E14, 0x76EE, 0x65E5, 0x6708, 0x66F0, 0x53BF, 0x672A, 0x672B, 0x6765, 0x4E4E, 0x5E73, 0x5DF1, 0x5DF2, 0x5DF3, 0x4E59, 0x98DE] #range(0x4E00, 0x9FA5): #0x9FFF
-CHARS = [unichr(i) for i in CHARS] + primary_chars_3[:10] + primary_chars_5[:10] + primary_chars_7[:10] + primary_chars_9[:10] + primary_chars_11[:10] + primary_chars_13[:10] + primary_chars_15[:10] + primary_chars_17[:10]
+#CHARS = [unichr(i) for i in CHARS] + primary_chars_3[:10] + primary_chars_5[:10] + primary_chars_7[:10] + primary_chars_9[:10] + primary_chars_11[:10] + primary_chars_13[:10] + primary_chars_15[:10] + primary_chars_17[:10]
+CHARS = primary_chars_1 + primary_chars_2[:4] + primary_chars_3[:4] + primary_chars_4[:5] + primary_chars_5[:5] + primary_chars_6[:5] + primary_chars_7[:5] + primary_chars_8[:5] + primary_chars_9[:5] + primary_chars_10[:5] + primary_chars_11[:5] + primary_chars_12[:5] + primary_chars_13[:5] + primary_chars_14[:5] + primary_chars_15[:5] + primary_chars_16[:5] + primary_chars_17[:5] + primary_chars_18[:5] + primary_chars_19[:5] + primary_chars_20[:5] + primary_chars_21[:5] + primary_chars_22 + primary_chars_23
 #其 : 0x5176
 #共 : 0x5171
 #具 : 0x5177
@@ -109,7 +110,7 @@ def generate_data(folder, filename):
     for i in files:
         char = i.split(".")[-2].decode("utf8")
         #responses.append(char)
-        responses.append(CHARS.index(i.split(".")[-2].decode("utf8")))
+        responses.append(CHARS.index(i.split(".")[-2].decode("utf8")) + 1)
         samples.append(load_img(i))
     t2 = time.time()
     print 'data generated, took %0.3f ms' % ((t2 - t1) * 1000.0,)
@@ -656,7 +657,7 @@ def features(img):
 
 #generate_data(DATA_PATH + "/trains/", DATA_PATH + '/features.data')
 
-samples, responses = generate_data(DATA_PATH + "/trains/", '')
+samples, responses = generate_data('/home/www/ocr/trains/', '')
 test_classifier(samples, responses)
 
 exit()
@@ -698,8 +699,9 @@ exit()
 #files = [wd + fn for fn in files]
 #
 #for fn in files:
-#    generate_chars(fn, DATA_PATH + '/trains/', img_size=50, font_size=46)
-#
+#    generate_chars(fn, '/home/www/ocr/trains/', img_size=50, font_size=46)
+#exit()
+
 #wd = DATA_PATH + "/fonts-test/"
 #files = [fn for fn in os.listdir(wd)]
 #files = [wd + fn for fn in files]
