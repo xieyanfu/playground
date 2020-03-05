@@ -7,14 +7,14 @@ import time
 
 import cv2
 import numpy as np
-import zhangsuen
+#import zhangsuen
 
 def print_timing(func):
     def wrapper(*arg, **kwargs):
         t1 = time.time()
         res = func(*arg, **kwargs)
         t2 = time.time()
-        print '%s took %0.3f ms' % (arg[0], (t2 - t1) * 1000.0)
+        print('%s took %0.3f ms' % (arg[0], (t2 - t1) * 1000.0))
         return res
     return wrapper
 
@@ -23,7 +23,7 @@ def util(func, img, **kwargs):
     return eval(func)(img, **kwargs)
 
 def binarize(img, **kwargs):
-    avg = (int(np.amin(img)) + int(np.amax(img))) / 2
+    avg = (int(np.amin(img)) + int(np.amax(img))) / 4
     (thresh, img) = cv2.threshold(img, avg, 255, cv2.THRESH_BINARY) # thresholding
     return img
 
@@ -125,21 +125,21 @@ if __name__ == '__main__':
     ]
 
     if len(sys.argv) < 4:
-        print "Usage:", sys.argv[0], " operation inputImg outputImg [ param1=value1 param2=value2 ...]"
-        print "     Valid operation: ", ', '.join(operations[:-1]), 'and ', operations[-1:][0]
-        print
-        print "     When operation is resize, you can specify width and height"
-        print "     When operation is frame, you can specify width and height"
-        print "     When operation is border_removal, you can specify size"
-        print "     When operation is erosion, dilation, opening, closing, gradient or smoothing, you can specify kernel"
+        print("Usage:", sys.argv[0], " operation inputImg outputImg [ param1=value1 param2=value2 ...]")
+        print("     Valid operation: ", ', '.join(operations[:-1]), 'and ', operations[-1:][0])
+        print("\n")
+        print("     When operation is resize, you can specify width and height")
+        print("     When operation is frame, you can specify width and height")
+        print("     When operation is border_removal, you can specify size")
+        print("     When operation is erosion, dilation, opening, closing, gradient or smoothing, you can specify kernel")
         exit()
         
     if sys.argv[1] not in operations:
-        print "ValueError: operation is not valid"
+        print("ValueError: operation is not valid")
         exit()
 
     if not os.path.isfile(sys.argv[2]):
-        print sys.argv[2], " doesn't exist"
+        print(sys.argv[2], " doesn't exist")
         exit()
 
     params = {}
