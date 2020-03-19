@@ -80,7 +80,7 @@ def get_captcha(opener, req_captcha):
     response = opener.open(req_captcha)
     img = io.BytesIO(response.read())
 
-    chaojiying = Chaojiying_Client('artlover', 'suxinyanfu', '904049')  #用户中心>>软件ID 生成一个替换 96001
+    chaojiying = Chaojiying_Client('username', 'password', 'app_id')  #用户中心>>软件ID 生成一个替换 96001
     # im = open('captcha.jpg', 'rb').read()                                                 #本地图片文件路径 来替换 a.jpg 有时WIN系统须要//
     res_cap = chaojiying.PostPic(img, 1902)
     if res_cap['err_str'] != 'OK':
@@ -90,7 +90,7 @@ def get_captcha(opener, req_captcha):
     return res_cap['pic_str']
 
 #4000 ~
-start = 4233
+start = 4444
 end = 5000
 while True:
 
@@ -121,7 +121,7 @@ while True:
     code = get_captcha(opener, req_captcha)
     # code = random.randrange(10000, 99999, 1);
 
-    time.sleep(random.randrange(1, 3, 1))
+    # time.sleep(random.randrange(1, 3, 1))
 
     no = "0230102" + str(start)
     dict = {"xxid":"78",
