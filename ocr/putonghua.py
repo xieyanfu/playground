@@ -67,10 +67,7 @@ err_noinfo = r'showMsg("error", "查询不到信息")'
 err_wrongcap = r'showMsg("error", "验证码不正确")'
 inf_data = r'考试地点'
 
-# cookie = CookieJar() 
-# opener = request.build_opener(request.HTTPCookieProcessor)
 cookie = MozillaCookieJar()
-# cookie.load("cookies.txt")
 opener = request.build_opener(request.HTTPCookieProcessor(cookie))
 
 home_url = 'http://bmfw.haedu.gov.cn/jycx/pthcj_check/78'
@@ -81,17 +78,23 @@ def get_captcha(opener, req_captcha):
     img = io.BytesIO(response.read())
 
     chaojiying = Chaojiying_Client('username', 'password', 'app_id')  #用户中心>>软件ID 生成一个替换 96001
-    # im = open('captcha.jpg', 'rb').read()                                                 #本地图片文件路径 来替换 a.jpg 有时WIN系统须要//
-    res_cap = chaojiying.PostPic(img, 1902)
+    res_cap = chaojiying.PostPic(img, 8001)
     if res_cap['err_str'] != 'OK':
         print("[E]验证码无法识别", res_cap)
         return get_captcha(opener, req_captcha)
 
     return res_cap['pic_str']
-
-#4000 ~
-start = 4444
-end = 5000
+ 
+# 02301023038
+# 02301025177
+# 03301020000
+# 
+# 10000 ~ 20000
+# 20001 ~ 30000
+# 30000 ~ 40000
+# 50000 ~ 60000
+start = 0
+end = 9999
 while True:
 
     headers = {
@@ -119,11 +122,10 @@ while True:
         continue
 
     code = get_captcha(opener, req_captcha)
-    # code = random.randrange(10000, 99999, 1);
 
     # time.sleep(random.randrange(1, 3, 1))
 
-    no = "0230102" + str(start)
+    no = "0330102" + str(start).zfill(4)
     dict = {"xxid":"78",
             "trueName":"谢言付",
             "zkzh": no,
@@ -169,37 +171,3 @@ while True:
     else:
         pass
     
-
-# response = opener.open(req_home)
-# print("当前页面网址："+response.geturl())
-# # exit()
-
-# code = get_captcha(opener, req_captcha)
-
-# dict = {"xxid":"78",
-#         "trueName":"申元元",
-#         "zkzh":"02301025177",
-#         "imageId":code,
-#         "sfzh":""
-#         }
-
-# data = bytes(parse.urlencode(dict),encoding="utf-8")
-
-# response = opener.open(req_search,data)
-# print("当前页面网址：", response.geturl())
-
-# html = response.read().decode("utf-8","ignore")
-# if html.find(err_noinfo) != -1: 
-#     print ("[E]信息不存在", dict)
-# elif html.find(err_wrongcap) != -1: 
-#     print ("[E]验证码错误", dict)
-# elif html.find(inf_data) != -1: 
-#     print ("[I]查询成功，信息如下：", dict)
-#     exit()
-# else:
-#     print ("未知错误", dict)
-
-# with open("result.html",'wb') as output:
-#     output.write(response.read())
-
-# exit()
